@@ -6,6 +6,15 @@ ROLE = "Integration Log Manager"
 
 
 def after_install():
+	after_migrate()
+	# Imported late: api imports mirror, which needs a fully loaded app
+	from integration_log.api import start_backfill
+
+	start_backfill()
+
+
+def after_migrate():
+	"""Registry cache must reflect hook changes after every migrate."""
 	ensure_role()
 	ensure_unique_index()
 	registry.clear_cache()

@@ -7,8 +7,11 @@ app_license = "GPLv3"
 
 required_apps = []
 
-# Registry cache must reflect hook changes after every migrate
-after_install = after_migrate = "integration_log.install.after_install"
+# Registry cache must reflect hook changes after every migrate; backfill only on install
+after_install = "integration_log.install.after_install"
+after_migrate = "integration_log.install.after_migrate"
+
+scheduler_events = {"daily": ["integration_log.tasks.cleanup_done"]}
 
 # Mirror registered log DocTypes; the handler returns immediately for all others
 doc_events = {
