@@ -1,3 +1,240 @@
 # Integration Log
 
-Central log for integrations: collect, acknowledge, retry. (Placeholder, work in progress.)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+![Frappe v16](https://img.shields.io/badge/Frappe-v16-0089ff)
+[![Release](https://img.shields.io/github/v/release/hotfix/frappe-integration-log)](https://github.com/hotfix/frappe-integration-log/releases)
+[![CI](https://github.com/hotfix/frappe-integration-log/actions/workflows/ci.yml/badge.svg)](https://github.com/hotfix/frappe-integration-log/actions/workflows/ci.yml)
+
+A central log for integrations on Frappe v16. Apps that write their own sync or error log DocType
+register it with one hook entry. Integration Log mirrors the interesting rows into a single
+`Integration Log Entry` list, where users acknowledge, reopen and (if the source supports it) retry
+them. A workspace shows open errors and warnings at a glance.
+
+There is no dependency on ERPNext, and consumer apps do not need to depend on Integration Log.
+
+## Install
+
+```bash
+bench get-app https://github.com/hotfix/frappe-integration-log
+bench --site your.site install-app integration_log
+```
+
+Installing creates the role `Integration Log Manager` and queues a backfill of existing rows of all
+registered sources. `System Manager` and `Integration Log Manager` can work with the entries.
+
+## Versions and updates
+
+Development happens on `main`. Releases are git tags `vX.Y.Z` with a GitHub Release. Production
+installs should pin a tag:
+
+```bash
+bench get-app https://github.com/hotfix/frappe-integration-log --branch v0.1.0
+```
+
+In a Docker image, use the tag as the branch of the app in `apps.json`. Changes per version are
+listed in [CHANGELOG.md](CHANGELOG.md).
+
+## Screenshots
+
+Screenshots will be added to [`docs/images/`](docs/images/).
+
+## The interface: `integration_logs` hook
+
+A consumer app declares its log DocType in its own `hooks.py`:
+
+```python
+integration_logs = [
+	{
+		"doctype": "My Sync Log",
+		"source": "My App",
+		"status_field": "status",
+		"severity_map": {"Failed": "error", "Skipped": "warning", "Done": "info"},
+		"message_field": "error_message",
+		"title_field": "reference",
+		"context_fields": ["direction", "reference"],
+		"group_fields": ["direction", "reference"],
+		"link_fields": ["reference_doctype", "reference_name"],
+		"mirror_levels": ["error", "warning"],
+		"retry_method": "my_app.sync.retry_log",
+		"can_retry_method": "my_app.sync.can_retry_log",
+	}
+]
+```
+
+### Required keys
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `doctype` | str | The log DocType. It must exist. |
+| `source` | str | Name shown to users and used for grouping in the chart and report. |
+| `status_field` | str | Field with the status of the row. It must exist on the DocType (standard fields like `modified` also count). |
+| `message_field` | str | Field with the message text. It must exist on the DocType. |
+
+### Optional keys
+
+| Key | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `severity_map` | dict | `{}` | Maps a status value to `error`, `warning` or `info`. |
+| `severity_method` | str (dotted path) | none | Function `f(doc)` returning `"error"`, `"warning"` or `"info"`. |
+| `title_field` | str | none | Field used as title. Without it, the first line of the message, then the document name. Titles are cut at 140 characters. |
+| `context_fields` | list of str | `[]` | Fields stored as JSON in the entry's `context`. |
+| `group_fields` | list of str | `[]` | Fields that identify "the same thing" for automatic resolution (see below). |
+| `link_fields` | list of two str | none | `[doctype_field, name_field]` of the source row; fills the entry's linked document. |
+| `mirror_levels` | list of str | `["error", "warning"]` | Severities that create an entry. |
+| `retry_method` | str (dotted path) | none | Enables the Retry button. |
+| `can_retry_method` | str (dotted path) | none | Decides per row whether Retry is offered. |
+
+Entries that fail validation (missing or unknown field, unknown severity, bad `mirror_levels`,
+`link_fields` without two items, DocType not installed) are skipped and reported once as an Error Log
+titled "Integration Log: invalid registry entry". If a DocType is registered twice, the first entry
+wins. The registry is cached and rebuilt on every `bench migrate`.
+
+### Severity rules
+
+1. With `severity_method`, its result is used. An unknown return value counts as `warning`.
+2. Otherwise `severity_map[status]` is used. A status missing from the map counts as `warning`.
+3. The built-in Error Log source has no status and is always `error`.
+
+Only rows whose severity is in `mirror_levels` produce an entry. Everything else (for example a
+successful run) is not mirrored.
+
+### Mirroring, groups and states
+
+An entry has the states `Open`, `Acknowledged` and `Resolved`. Mirroring runs on every insert and
+update of the source row, inside the same transaction, and never makes the source save fail.
+
+- A new row with a mirrored severity creates an `Open` entry. Later updates of the row refresh the
+  entry (severity, message, status, last seen).
+- If the row changes to a severity that is not mirrored, an `Open` entry becomes `Resolved`
+  automatically.
+- **Group resolution.** With `group_fields`, the values of those fields are hashed into a group key.
+  When a row of the group is saved with a non-mirrored severity (for example a later successful run),
+  all `Open` entries of the same group that are not newer than that row are resolved automatically.
+  If all group fields are empty, no group is formed.
+- **Acknowledged stays acknowledged.** An acknowledged entry is never reopened or resolved by the
+  mirror, even if the source row changes again. Only the displayed data is refreshed. A user can reopen
+  it manually.
+- An automatically resolved entry opens again if its own source row is mirrored again.
+- Deleting the source row deletes its mirror.
+
+### Writers that bypass document events
+
+`frappe.db.set_value` and raw SQL do not fire document events. After such a write, call:
+
+```python
+from integration_log.mirror import sync
+
+sync("My Sync Log", name)
+```
+
+`sync` re-reads the row and mirrors it (or removes the mirror when the row is gone). It returns the
+entry name or `None`. A consumer must not import `integration_log` unconditionally; see the guard in
+the next section.
+
+### Retry contract
+
+```python
+def retry_log(source_name: str) -> None:
+	"""Re-run the sync for this log row. Raise an exception on failure."""
+
+
+def can_retry_log(source_name: str) -> bool:
+	"""True if a retry makes sense for this row."""
+```
+
+- `retry_method(source_name)` receives the name of the source row. The consumer checks its own
+  permissions and may commit. If it raises, Integration Log rolls back the writes of the request that
+  are not committed yet and shows the exception text. On success the mirror is synced again.
+- `can_retry_method(source_name) -> bool` decides whether the button is shown. Without it, Retry is
+  always offered for sources with a `retry_method`. An exception counts as "not available".
+- A consumer must not import `integration_log`. Guard every use with the installed apps and resolve
+  the function by its dotted path:
+
+```python
+import frappe
+
+if "integration_log" in frappe.get_installed_apps():
+	frappe.get_attr("integration_log.mirror.sync")("My Sync Log", name)
+```
+
+### A full example entry
+
+With the registration above, a log row that failed:
+
+```python
+frappe.get_doc(
+	{
+		"doctype": "My Sync Log",
+		"status": "Failed",
+		"direction": "Export",
+		"reference": "SINV-0042",
+		"reference_doctype": "Sales Invoice",
+		"reference_name": "SINV-0042",
+		"error_message": "Shop API returned 503\nService unavailable",
+	}
+).insert()
+```
+
+creates this `Integration Log Entry`:
+
+| Field | Value |
+| --- | --- |
+| `state` | Open |
+| `severity` | error |
+| `source` | My App |
+| `title` | SINV-0042 |
+| `message` | The full error message (both lines) |
+| `source_status` | Failed |
+| `source_doctype` / `source_name` | My Sync Log / the row's name |
+| `group_key` | sha1 of `["Export", "SINV-0042"]` |
+| `context` | `{"direction": "Export", "reference": "SINV-0042"}` |
+| `ref_doctype` / `ref_name` | Sales Invoice / SINV-0042 |
+| `occurred_on` / `last_seen` | creation and modified time of the row |
+
+If a later run for the same direction and reference is saved with status `Done`, this entry becomes
+`Resolved` automatically.
+
+## Error Log option
+
+In **Integration Log Settings**, tick *Include Error Log* to mirror Frappe's Error Log as a built-in
+source named "System" (severity always `error`, title from the method, linked document from
+`reference_doctype` / `reference_name`). Error Logs are not mirrored while the option is off.
+
+## Retention and cleanup
+
+A daily job deletes `Acknowledged` and `Resolved` entries that were last modified more than
+*Retention (days)* ago (default 90, `0` = never delete). It also deletes mirrors whose source row no
+longer exists, whatever their state (Frappe's own log clearing deletes rows without a trash event).
+`Open` entries are never removed because of age.
+
+## Backfill
+
+Rows that existed before the app was installed, or before a source was registered, are mirrored by a
+background job. It is queued on install and can be started again with the button *Backfill now* in
+**Integration Log Settings** (or `integration_log.api.start_backfill`). Running it more than once is
+safe. After adding a source, run `bench --site your.site migrate` so the registry is rebuilt, then
+start the backfill.
+
+## Permissions
+
+The mirror copies message texts of the source rows into `Integration Log Entry` without checking the
+permissions on the source DocType. Everyone with access to the entries (`Integration Log Manager`,
+`System Manager`) sees these texts. Do not register logs whose messages contain data that these roles
+may not see. Acknowledge, reopen, retry and backfill need write permission on the entry or the
+settings, and the API methods accept POST only.
+
+## Workspace
+
+The workspace *Integration Log* (German: *Integrations-Protokoll*) has the number cards *Open Errors*
+and *Open Warnings*, the chart *Open by Source*, and shortcuts to the open entries, the settings and
+the report *Integration Log by Source*.
+
+## Translations
+
+German translations are in `integration_log/locale/de.po`. Update the template with
+`bench generate-pot-file --app integration_log` and compile with
+`bench compile-po-to-mo --app integration_log` (also done by `bench build`).
+
+## License
+
+GPLv3, see [LICENSE](LICENSE).

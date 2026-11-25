@@ -1,0 +1,309 @@
+# German translations for Integration Log.
+# Copyright (C) 2026 hotfix
+# This file is distributed under the same license as the Integration Log project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Integration Log VERSION\n"
+"Report-Msgid-Bugs-To: info@hotfix.example\n"
+"POT-Creation-Date: 2026-11-25 17:16+0000\n"
+"PO-Revision-Date: 2026-11-25 17:16+0000\n"
+"Last-Translator: info@hotfix.example\n"
+"Language-Team: info@hotfix.example\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#. Description of the 'Retention (days)' (Int) field in DocType 'Integration
+#. Log Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:20
+msgid "0 = never delete"
+msgstr "0 = nie löschen"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:14
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:18
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:19
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:31
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:37
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:38
+msgid "Acknowledge"
+msgstr "Erledigt"
+
+#. Option for the 'State' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:34
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:10
+msgid "Acknowledged"
+msgstr "Erledigt"
+
+#. Label of the acknowledged_by (Link) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:136
+msgid "Acknowledged By"
+msgstr "Erledigt von"
+
+#. Label of the acknowledged_on (Datetime) field in DocType 'Integration Log
+#. Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:143
+msgid "Acknowledged On"
+msgstr "Erledigt am"
+
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:12
+msgid "Backfill is already queued or running."
+msgstr "Der Nachimport ist bereits eingeplant oder läuft."
+
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:3
+msgid "Backfill now"
+msgstr "Jetzt nachimportieren"
+
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:11
+msgid "Backfill started in the background."
+msgstr "Der Nachimport wurde im Hintergrund gestartet."
+
+#. Label of the context (Small Text) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:103
+msgid "Context"
+msgstr "Kontext"
+
+#. Label of a shortcut in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:52
+msgid "Entries by Source"
+msgstr "Einträge nach Quelle"
+
+#. Label of the group_key (Data) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:96
+msgid "Group Key"
+msgstr "Gruppenschlüssel"
+
+#. Label of the include_error_log (Check) field in DocType 'Integration Log
+#. Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:11
+msgid "Include Error Log"
+msgstr "Fehlerprotokoll einbeziehen"
+
+#. Name of a Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:11
+msgid "Integration Log"
+msgstr "Integrations-Protokoll"
+
+#. Name of a DocType
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:178
+msgid "Integration Log Entry"
+msgstr "Integrations-Protokolleintrag"
+
+#. Name of a role
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:168
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:30
+msgid "Integration Log Manager"
+msgstr "Integrations-Protokoll-Manager"
+
+#. Name of a DocType
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:38
+msgid "Integration Log Settings"
+msgstr "Integrations-Protokoll-Einstellungen"
+
+#. Name of a report
+#: integration_log/integration_log/report/integration_log_by_source/integration_log_by_source.json:11
+msgid "Integration Log by Source"
+msgstr "Integrations-Protokoll nach Quelle"
+
+#. Description of the 'Context' (Small Text) field in DocType 'Integration Log
+#. Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:105
+msgid "JSON"
+msgstr "JSON"
+
+#. Label of the last_seen (Datetime) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:130
+msgid "Last Seen"
+msgstr "Zuletzt gesehen"
+
+#. Label of the message (Long Text) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:70
+msgid "Message"
+msgstr "Meldung"
+
+#. Description of the 'Include Error Log' (Check) field in DocType 'Integration
+#. Log Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:13
+msgid "Mirror Error Log records into the integration log."
+msgstr "Fehlerprotokoll-Einträge in das Integrations-Protokoll spiegeln."
+
+#: integration_log/api.py:17
+msgid "Not permitted"
+msgstr "Nicht erlaubt"
+
+#. Label of the note (Small Text) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:16
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:149
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:35
+msgid "Note"
+msgstr "Notiz"
+
+#. Label of the occurred_on (Datetime) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:124
+msgid "Occurred On"
+msgstr "Aufgetreten am"
+
+#. Option for the 'State' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:34
+msgid "Open"
+msgstr "Offen"
+
+#. Label of a shortcut in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:44
+msgid "Open Entries"
+msgstr "Offene Einträge"
+
+#. Label of a number card in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:32
+msgid "Open Errors"
+msgstr "Offene Fehler"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:33
+msgid "Open Linked Document"
+msgstr "Verknüpftes Dokument öffnen"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:27
+msgid "Open Source"
+msgstr "Quelle öffnen"
+
+#. Label of a number card in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:36
+msgid "Open Warnings"
+msgstr "Offene Warnungen"
+
+#. Label of a chart in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:26
+msgid "Open by Source"
+msgstr "Offen nach Quelle"
+
+#. Label of the ref_doctype (Link) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:110
+msgid "Reference DocType"
+msgstr "Referenz-DocType"
+
+#. Label of the ref_name (Dynamic Link) field in DocType 'Integration Log
+#. Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:117
+msgid "Reference Name"
+msgstr "Referenzname"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:23
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:42
+msgid "Reopen"
+msgstr "Wieder öffnen"
+
+#. Option for the 'State' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:34
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:7
+msgid "Resolved"
+msgstr "Gelöst"
+
+#. Label of the resolved_automatically (Check) field in DocType 'Integration
+#. Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:154
+msgid "Resolved Automatically"
+msgstr "Automatisch gelöst"
+
+#. Label of the retention_days (Int) field in DocType 'Integration Log
+#. Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:18
+msgid "Retention (days)"
+msgstr "Aufbewahrung (Tage)"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.js:39
+msgid "Retry"
+msgstr "Erneut versuchen"
+
+#: integration_log/api.py:100
+msgid "Retry is not available for this entry."
+msgstr "Für diesen Eintrag ist kein erneuter Versuch möglich."
+
+#: integration_log/api.py:113
+msgid "Retry triggered."
+msgstr "Erneuter Versuch ausgelöst."
+
+#. Label of a shortcut in the Integration Log Workspace
+#: integration_log/integration_log/workspace/integration_log/integration_log.json:58
+msgid "Settings"
+msgstr "Einstellungen"
+
+#. Label of the severity (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:43
+msgid "Severity"
+msgstr "Schweregrad"
+
+#. Label of the source (Data) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:53
+msgid "Source"
+msgstr "Quelle"
+
+#. Label of the source_doctype (Link) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:82
+msgid "Source DocType"
+msgstr "Quell-DocType"
+
+#. Label of the source_name (Dynamic Link) field in DocType 'Integration Log
+#. Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:89
+msgid "Source Name"
+msgstr "Quellname"
+
+#. Label of the source_status (Data) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:76
+msgid "Source Status"
+msgstr "Quellstatus"
+
+#. Label of the state (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:32
+msgid "State"
+msgstr "Status"
+
+#. Name of a role
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:160
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:25
+msgid "System Manager"
+msgstr "System-Manager"
+
+#: integration_log/api.py:97
+msgid "This source does not support retry."
+msgstr "Diese Quelle unterstützt keinen erneuten Versuch."
+
+#. Label of the title (Data) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:62
+msgid "Title"
+msgstr "Titel"
+
+#. Option for the 'Severity' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:45
+msgid "error"
+msgstr "Fehler"
+
+#. Option for the 'Severity' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:45
+msgid "info"
+msgstr "Info"
+
+#. Option for the 'Severity' (Select) field in DocType 'Integration Log Entry'
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:45
+msgid "warning"
+msgstr "Warnung"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:24
+#, python-brace-format
+msgid "{0} entries updated"
+msgstr "{0} Einträge aktualisiert"
+
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Error"
+msgstr "Fehler"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Warning"
+msgstr "Warnung"
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Info"
+msgstr "Info"

@@ -1,0 +1,72 @@
+{
+ "docstatus": 0,
+ "idx": 0,
+ "owner": "Administrator",
+ "creation": "2026-11-25 14:00:00.000000",
+ "modified": "2026-11-25 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Integration Log",
+ "doctype": "Workspace",
+ "name": "Integration Log",
+ "label": "Integration Log",
+ "title": "Integration Log",
+ "type": "Workspace",
+ "public": 1,
+ "standard": 1,
+ "is_hidden": 0,
+ "hide_custom": 0,
+ "for_user": "",
+ "icon": "list",
+ "indicator_color": "orange",
+ "sequence_id": 100.0,
+ "content": "[{\"id\": \"nc_errors\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Errors\", \"col\": 6}}, {\"id\": \"nc_warnings\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Warnings\", \"col\": 6}}, {\"id\": \"ch_source\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open by Source\", \"col\": 12}}, {\"id\": \"sc_entries\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Open Entries\", \"col\": 4}}, {\"id\": \"sc_report\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Entries by Source\", \"col\": 4}}, {\"id\": \"sc_settings\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Settings\", \"col\": 4}}]",
+ "charts": [
+  {
+   "chart_name": "Open by Source",
+   "label": "Open by Source"
+  }
+ ],
+ "number_cards": [
+  {
+   "number_card_name": "Open Errors",
+   "label": "Open Errors"
+  },
+  {
+   "number_card_name": "Open Warnings",
+   "label": "Open Warnings"
+  }
+ ],
+ "shortcuts": [
+  {
+   "type": "DocType",
+   "link_to": "Integration Log Entry",
+   "doc_view": "List",
+   "label": "Open Entries",
+   "color": "Red",
+   "stats_filter": "{\"state\": \"Open\"}"
+  },
+  {
+   "type": "Report",
+   "link_to": "Integration Log by Source",
+   "report_ref_doctype": "Integration Log Entry",
+   "label": "Entries by Source"
+  },
+  {
+   "type": "DocType",
+   "link_to": "Integration Log Settings",
+   "doc_view": "",
+   "label": "Settings"
+  }
+ ],
+ "links": [],
+ "quick_lists": [],
+ "custom_blocks": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Integration Log Manager"
+  }
+ ]
+}

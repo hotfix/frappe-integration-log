@@ -1,0 +1,26 @@
+{
+ "docstatus": 0,
+ "idx": 0,
+ "owner": "Administrator",
+ "creation": "2026-11-25 14:00:00.000000",
+ "modified": "2026-11-25 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Integration Log",
+ "doctype": "Report",
+ "name": "Integration Log by Source",
+ "report_name": "Integration Log by Source",
+ "ref_doctype": "Integration Log Entry",
+ "report_type": "Report Builder",
+ "is_standard": "Yes",
+ "add_total_row": 0,
+ "disabled": 0,
+ "json": "{\"filters\": [[\"Integration Log Entry\", \"state\", \"=\", \"Open\"]], \"fields\": [[\"source\", \"Integration Log Entry\"], [\"severity\", \"Integration Log Entry\"], [\"title\", \"Integration Log Entry\"], [\"state\", \"Integration Log Entry\"], [\"occurred_on\", \"Integration Log Entry\"]], \"order_by\": \"`tabIntegration Log Entry`.`occurred_on` desc\", \"add_totals_row\": false, \"page_length\": 20, \"column_widths\": {}, \"group_by\": {\"group_by\": \"source\", \"aggregate_function\": \"count\", \"aggregate_on\": null}}",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Integration Log Manager"
+  }
+ ]
+}
