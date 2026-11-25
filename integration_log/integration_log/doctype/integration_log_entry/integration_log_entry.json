@@ -1,0 +1,184 @@
+{
+ "autoname": "hash",
+ "track_changes": 0,
+ "sort_field": "occurred_on",
+ "sort_order": "DESC",
+ "title_field": "title",
+ "in_create": 1,
+ "field_order": [
+  "state",
+  "severity",
+  "source",
+  "title",
+  "message",
+  "source_status",
+  "source_doctype",
+  "source_name",
+  "group_key",
+  "context",
+  "ref_doctype",
+  "ref_name",
+  "occurred_on",
+  "last_seen",
+  "acknowledged_by",
+  "acknowledged_on",
+  "note",
+  "resolved_automatically"
+ ],
+ "fields": [
+  {
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "label": "State",
+   "read_only": 1,
+   "options": "Open\nAcknowledged\nResolved",
+   "default": "Open",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "read_only": 1,
+   "options": "error\nwarning\ninfo",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "read_only": 1,
+   "length": 140,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Long Text",
+   "label": "Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_status",
+   "fieldtype": "Data",
+   "label": "Source Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source DocType",
+   "read_only": 1,
+   "options": "DocType"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Name",
+   "read_only": 1,
+   "options": "source_doctype"
+  },
+  {
+   "fieldname": "group_key",
+   "fieldtype": "Data",
+   "label": "Group Key",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "context",
+   "fieldtype": "Small Text",
+   "label": "Context",
+   "read_only": 1,
+   "description": "JSON"
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "read_only": 1,
+   "options": "DocType"
+  },
+  {
+   "fieldname": "ref_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "read_only": 1,
+   "options": "ref_doctype"
+  },
+  {
+   "fieldname": "occurred_on",
+   "fieldtype": "Datetime",
+   "label": "Occurred On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "acknowledged_by",
+   "fieldtype": "Link",
+   "label": "Acknowledged By",
+   "read_only": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "acknowledged_on",
+   "fieldtype": "Datetime",
+   "label": "Acknowledged On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "resolved_automatically",
+   "fieldtype": "Check",
+   "label": "Resolved Automatically",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "export": 1,
+   "delete": 1
+  },
+  {
+   "role": "Integration Log Manager",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "doctype": "DocType",
+ "module": "Integration Log",
+ "custom": 0,
+ "name": "Integration Log Entry",
+ "engine": "InnoDB",
+ "editable_grid": 0,
+ "owner": "Administrator",
+ "modified": "2026-11-25 12:00:00.000000",
+ "modified_by": "Administrator"
+}

@@ -1,0 +1,44 @@
+{
+ "issingle": 1,
+ "field_order": [
+  "include_error_log",
+  "retention_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "include_error_log",
+   "fieldtype": "Check",
+   "label": "Include Error Log",
+   "default": "0",
+   "description": "Mirror Error Log records into the integration log."
+  },
+  {
+   "fieldname": "retention_days",
+   "fieldtype": "Int",
+   "label": "Retention (days)",
+   "default": "90",
+   "description": "0 = never delete"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "Integration Log Manager",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "doctype": "DocType",
+ "module": "Integration Log",
+ "custom": 0,
+ "name": "Integration Log Settings",
+ "engine": "InnoDB",
+ "editable_grid": 0,
+ "owner": "Administrator",
+ "modified": "2026-11-25 12:00:00.000000",
+ "modified_by": "Administrator"
+}

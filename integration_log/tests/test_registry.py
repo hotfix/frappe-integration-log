@@ -133,8 +133,6 @@ class TestRegistry(IntegrationTestCase):
 			self.assertIn("ToDo", registry.get_registry())
 
 	def test_error_log_source_only_when_enabled(self):
-		if not frappe.db.exists("DocType", "Integration Log Settings"):
-			self.skipTest("Integration Log Settings arrives in Task 3")
 		original = frappe.db.get_single_value("Integration Log Settings", "include_error_log")
 		try:
 			frappe.db.set_single_value("Integration Log Settings", "include_error_log", 0)
