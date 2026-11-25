@@ -56,6 +56,26 @@ class TestWorkspace(IntegrationTestCase):
 		self.assertEqual(hooks[0]["route"], "/desk/integration-log")
 		self.assertIn("integration_log", [a["name"] for a in get_apps()])
 
+	def test_has_app_permission(self):
+		from integration_log.install import ROLE, has_app_permission
+
+		email = "il-perm-test@example.com"
+		self.addCleanup(self._remove_user, email, frappe.session.user)
+		user = frappe.get_doc(
+			{"doctype": "User", "email": email, "first_name": "ILPerm", "send_welcome_email": 0}
+		).insert(ignore_permissions=True)
+		frappe.set_user(email)
+		self.assertFalse(has_app_permission())
+		frappe.set_user("Administrator")
+		user.add_roles(ROLE)
+		frappe.clear_cache(user=email)
+		frappe.set_user(email)
+		self.assertTrue(has_app_permission())
+
+	def _remove_user(self, email, previous):
+		frappe.set_user(previous)
+		frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+
 	def test_desktop_icon_fixture(self):
 		path = frappe.get_app_path("integration_log", "desktop_icon", "integration_log.json")
 		with open(path) as f:

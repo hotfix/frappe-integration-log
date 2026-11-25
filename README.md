@@ -250,8 +250,9 @@ report and the settings.
 On the home screen the app appears as the tile *Integration Log* (hook `add_to_apps_screen`, shown to
 System Manager and Integration Log Manager). Sites that use the "Desktop Icons" desktop mode get the
 shipped Desktop Icon `Integration Log` instead (`desktop_icon/integration_log.json`). Both open the
-workspace. After pulling an update run `bench --site <site> migrate` and `bench build` (or restart) so the
-tile logo asset is linked.
+workspace. The tile logo is served from `assets/integration_log`, which `bench build` creates for apps
+present in the bench (a plain restart does not recreate the symlink). After installing or updating run
+`bench --site <site> migrate` and `bench build`.
 
 ## Translations
 
