@@ -3,6 +3,7 @@
 import frappe
 from frappe import _
 from frappe.utils import cstr, now_datetime
+from frappe.utils.background_jobs import is_job_enqueued
 
 from integration_log import mirror, registry
 
@@ -119,16 +120,20 @@ def start_backfill(source_doctype: str | None = None) -> list[str]:
 	doctypes = [source_doctype] if source_doctype else sorted(registry.registered_doctypes())
 	enqueued = []
 	for doctype in doctypes:
-		job = frappe.enqueue(
+		# Frappe namespaces the job id by site itself. enqueue() returns None with
+		# enqueue_after_commit, so deduplicate by asking the queue ourselves.
+		job_id = f"integration_log_backfill::{doctype}"
+		if is_job_enqueued(job_id):
+			continue
+		frappe.enqueue(
 			"integration_log.api.backfill",
 			queue="long",
 			deduplicate=True,
 			enqueue_after_commit=True,
-			job_id=f"integration_log_backfill::{frappe.local.site}::{doctype}",
+			job_id=job_id,
 			source_doctype=doctype,
 		)
-		if job:
-			enqueued.append(doctype)
+		enqueued.append(doctype)
 	return enqueued
 
 

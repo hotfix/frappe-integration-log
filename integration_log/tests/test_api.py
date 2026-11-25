@@ -191,7 +191,10 @@ class TestApi(IntegrationTestCase):
 		self.assertTrue(entry.get_onload("can_retry"))
 
 	def test_start_backfill_enqueues(self):
-		with patch("frappe.enqueue") as enqueue:
+		with (
+			patch("integration_log.api.is_job_enqueued", return_value=False),
+			patch("frappe.enqueue") as enqueue,
+		):
 			self.assertEqual(api.start_backfill(), ["ToDo"])
 		self.assertTrue(enqueue.call_args.kwargs["enqueue_after_commit"])
 		self.assertEqual(enqueue.call_args.args[0], "integration_log.api.backfill")
@@ -209,9 +212,22 @@ class TestApi(IntegrationTestCase):
 		api.backfill("ToDo", chunk=2)
 		self.assertEqual(frappe.db.count(ENTRY, filters), 3)
 
-	def test_start_backfill_reports_deduplicated(self):
-		with patch("frappe.enqueue", return_value=None):
+	def test_start_backfill_skips_already_enqueued(self):
+		with (
+			patch("integration_log.api.is_job_enqueued", return_value=True),
+			patch("frappe.enqueue") as enqueue,
+		):
 			self.assertEqual(api.start_backfill(), [])
+		enqueue.assert_not_called()
+
+	def test_start_backfill_enqueues_when_not_queued(self):
+		with (
+			patch("integration_log.api.is_job_enqueued", return_value=False) as queued,
+			patch("frappe.enqueue", return_value=None) as enqueue,
+		):
+			self.assertEqual(api.start_backfill(), ["ToDo"])
+		self.assertEqual(queued.call_args.args[0], enqueue.call_args.kwargs["job_id"])
+		self.assertNotIn(frappe.local.site, enqueue.call_args.kwargs["job_id"])
 
 	def test_after_install_survives_enqueue_failure(self):
 		from integration_log import install
@@ -220,7 +236,7 @@ class TestApi(IntegrationTestCase):
 		before = frappe.db.count("Error Log", {"method": title})
 		with (
 			patch.object(registry, "_load_hook_entries", return_value=[todo_entry()]),
-			patch("frappe.enqueue", side_effect=ConnectionError("redis down")),
+			patch("integration_log.api.is_job_enqueued", side_effect=ConnectionError("redis down")),
 		):
 			install.after_install()
 		self.assertEqual(frappe.db.count("Error Log", {"method": title}), before + 1)
