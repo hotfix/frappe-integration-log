@@ -118,7 +118,8 @@ class TestWorkspace(IntegrationTestCase):
 		try:
 			self.assertEqual(frappe._("Acknowledge"), "Erledigt")
 			self.assertEqual(frappe._("Reopen"), "Wieder öffnen")
-			self.assertEqual(frappe._("Retry"), "Erneut versuchen")
+			self.assertEqual(frappe._("Retry"), "Wiederholen")
+			self.assertEqual(frappe._("Resolved", context="Integration Log Entry"), "Gelöst")
 			self.assertEqual(frappe._("Integration Log"), "Integrations-Protokoll")
 		finally:
 			frappe.local.lang = "en"

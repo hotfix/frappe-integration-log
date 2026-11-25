@@ -4,7 +4,7 @@ frappe.listview_settings["Integration Log Entry"] = {
 
 	get_indicator(doc) {
 		if (doc.state === "Resolved") {
-			return [__("Resolved"), "green", "state,=,Resolved"];
+			return [__("Resolved", null, "Integration Log Entry"), "green", "state,=,Resolved"];
 		}
 		if (doc.state === "Acknowledged") {
 			return [__("Acknowledged"), "gray", "state,=,Acknowledged"];
