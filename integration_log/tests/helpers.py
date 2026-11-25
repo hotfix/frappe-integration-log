@@ -35,7 +35,9 @@ def cleanup_test_data(testcase):
 		created = [n for n in frappe.get_all("ToDo", pluck="name") if n not in existing]
 		frappe.db.delete("Integration Log Entry", {"source": TEST_SOURCE})
 		if created:
-			frappe.db.delete("Integration Log Entry", {"source_doctype": "ToDo", "source_name": ("in", created)})
+			frappe.db.delete(
+				"Integration Log Entry", {"source_doctype": "ToDo", "source_name": ("in", created)}
+			)
 			frappe.db.delete("ToDo", {"name": ("in", created)})
 		frappe.db.commit()
 
