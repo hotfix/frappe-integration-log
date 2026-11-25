@@ -11,6 +11,7 @@ ENTRY = "Integration Log Entry"
 SETTINGS = "Integration Log Settings"
 HELPERS = "integration_log.tests.helpers"
 NO_ROLE_USER = "il-norole@example.com"
+MANAGER_USER = "il-manager@example.com"
 
 
 class TestApi(IntegrationTestCase):
@@ -108,6 +109,24 @@ class TestApi(IntegrationTestCase):
 		):
 			with self.assertRaises(frappe.PermissionError):
 				call()
+
+	def test_manager_cannot_change_settings_or_backfill(self):
+		if not frappe.db.exists("User", MANAGER_USER):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": MANAGER_USER,
+					"first_name": "Manager",
+					"send_welcome_email": 0,
+					"roles": [{"role": "Integration Log Manager"}],
+				}
+			).insert(ignore_permissions=True)
+		frappe.set_user(MANAGER_USER)
+		self.assertTrue(frappe.has_permission(ENTRY, "write"))
+		self.assertTrue(frappe.has_permission(SETTINGS, "read"))
+		self.assertFalse(frappe.has_permission(SETTINGS, "write"))
+		with self.assertRaises(frappe.PermissionError):
+			api.start_backfill()
 
 	def test_retry_calls_source_method_and_syncs(self):
 		entry = self._entry(self._todo())
@@ -273,4 +292,24 @@ class TestApi(IntegrationTestCase):
 		frappe.db.delete("ToDo", {"name": orphan_todo.name})
 		tasks.cleanup_done()
 		self.assertFalse(frappe.db.exists(ENTRY, orphan))
+		self.assertTrue(frappe.db.exists(ENTRY, kept))
+
+	def test_cleanup_removes_mirrors_of_vanished_doctype(self):
+		names = []
+		for state in ("Open", "Acknowledged", "Resolved"):
+			entry = frappe.get_doc(
+				{
+					"doctype": ENTRY,
+					"state": state,
+					"severity": "error",
+					"source": "Uninstalled App",
+					"title": "t",
+					"source_doctype": "IL Vanished Log",
+					"source_name": f"vanished-{state}",
+				}
+			).insert(ignore_permissions=True, ignore_links=True)
+			names.append(entry.name)
+		kept = self._new().name
+		self.assertGreaterEqual(tasks.cleanup_done(), 3)
+		self.assertFalse(frappe.db.exists(ENTRY, {"name": ("in", names)}))
 		self.assertTrue(frappe.db.exists(ENTRY, kept))

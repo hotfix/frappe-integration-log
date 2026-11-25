@@ -1,7 +1,9 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
+
+from integration_log import registry
 
 
 class TestInstall(IntegrationTestCase):
@@ -39,3 +41,17 @@ class TestInstall(IntegrationTestCase):
 		with patch("integration_log.registry.clear_cache") as clear:
 			settings.save()
 		clear.assert_called()
+
+	def test_settings_save_clears_registry_cache_after_commit(self):
+		settings = frappe.get_single("Integration Log Settings")
+		after_commit = MagicMock()
+		with patch.object(frappe.db, "after_commit", after_commit):
+			settings.save()
+		after_commit.add.assert_any_call(registry.clear_cache)
+		frappe.db.rollback()
+
+	def test_settings_permissions(self):
+		perms = {p.role: p for p in frappe.get_meta("Integration Log Settings").permissions}
+		self.assertTrue(perms["System Manager"].write)
+		self.assertTrue(perms["Integration Log Manager"].read)
+		self.assertFalse(perms["Integration Log Manager"].write)

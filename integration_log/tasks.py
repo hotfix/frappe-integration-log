@@ -10,7 +10,8 @@ def cleanup_done() -> int:
 	"""Delete finished entries past the retention period and mirrors of vanished source rows.
 
 	Open entries are only removed when their source row no longer exists (Frappe's
-	log clearing deletes Error Logs without firing on_trash)."""
+	log clearing deletes Error Logs without firing on_trash) or their source DocType is
+	gone (consumer app uninstalled)."""
 	return _delete_expired() + _delete_orphans()
 
 
@@ -33,7 +34,14 @@ def _delete_orphans() -> int:
 	deleted = 0
 	doctypes = frappe.get_all(ENTRY, distinct=True, pluck="source_doctype")
 	for doctype in doctypes:
-		if not doctype or not frappe.db.table_exists(doctype):
+		if not doctype:
+			continue
+		if not frappe.db.exists("DocType", doctype):
+			count = frappe.db.count(ENTRY, {"source_doctype": doctype})
+			frappe.db.delete(ENTRY, {"source_doctype": doctype})
+			deleted += count
+			continue
+		if not frappe.db.table_exists(doctype):
 			continue
 		last = ""
 		while True:

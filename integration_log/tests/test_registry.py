@@ -76,6 +76,18 @@ class TestRegistry(IntegrationTestCase):
 		self.assertEqual(set(reg), {"ToDo"})
 		self.assertEqual(self._error_count() - before, 4)
 
+	def test_own_doctypes_rejected(self):
+		before = self._error_count()
+		entries = [
+			todo_entry(doctype="Integration Log Entry", status_field="state", message_field="message"),
+			todo_entry(doctype="Integration Log Settings", status_field="name", message_field="name"),
+		]
+		for entry in entries:
+			with self.assertRaises(ValueError):
+				registry._parse_entry(entry)
+		self.assertEqual(self._build(entries), {})
+		self.assertEqual(self._error_count() - before, 2)
+
 	def test_empty_mirror_levels_kept(self):
 		reg = self._build([todo_entry(mirror_levels=[])])
 		self.assertEqual(reg["ToDo"].mirror_levels, frozenset())

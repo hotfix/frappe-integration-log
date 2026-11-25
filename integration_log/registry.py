@@ -22,6 +22,9 @@ SEVERITIES = ("info", "warning", "error")
 DEFAULT_MIRROR_LEVELS = frozenset({"error", "warning"})
 INVALID_ENTRY_TITLE = "Integration Log: invalid registry entry"
 SETTINGS_DOCTYPE = "Integration Log Settings"
+ENTRY_DOCTYPE = "Integration Log Entry"
+# Mirroring these into themselves would recurse
+OWN_DOCTYPES = frozenset({ENTRY_DOCTYPE, SETTINGS_DOCTYPE})
 CACHE_KEY = "integration_log_registry"
 LOCAL_ATTR = "integration_log_registry"
 BUILDING_ATTR = "integration_log_registry_building"
@@ -90,6 +93,8 @@ def _parse_entry(entry: dict) -> SourceConfig:
 	doctype = entry.get("doctype")
 	if not doctype:
 		raise ValueError("missing doctype")
+	if doctype in OWN_DOCTYPES:
+		raise ValueError(f"{doctype} cannot be registered as a source")
 	if not frappe.db.exists("DocType", doctype):
 		raise ValueError(f"DocType {doctype} does not exist")
 
