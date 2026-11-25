@@ -10,7 +10,11 @@ def after_install():
 	# Imported late: api imports mirror, which needs a fully loaded app
 	from integration_log.api import start_backfill
 
-	start_backfill()
+	try:
+		start_backfill()
+	except Exception:
+		# Queue unreachable must not abort the install; "Backfill now" is the recovery
+		frappe.log_error(title="Integration Log: backfill could not be started")
 
 
 def after_migrate():

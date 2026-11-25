@@ -21,14 +21,14 @@ def _as_list(names) -> list[str]:
 		try:
 			parsed = frappe.parse_json(names)
 		except Exception:
-			parsed = names
+			parsed = None
+		if not isinstance(parsed, list):
+			return [names]
 		names = parsed
-	if isinstance(names, str):
-		return [names]
 	return [cstr(name) for name in names or []]
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def acknowledge(names: str | list[str], note: str | None = None) -> int:
 	_check_permission()
 	count = 0
@@ -46,7 +46,7 @@ def acknowledge(names: str | list[str], note: str | None = None) -> int:
 	return count
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def reopen(names: str | list[str]) -> int:
 	_check_permission()
 	count = 0
@@ -83,19 +83,27 @@ def can_retry(name: str) -> bool:
 	return retry_available(entry.source_doctype, entry.source_name)
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def retry(name: str) -> dict:
+	"""Run the source's retry_method for the entry's source row, then re-sync the mirror.
+
+	On failure the open transaction is rolled back, so a partial write by the consumer
+	is not committed with the request (anything the consumer committed itself stays)."""
 	_check_permission()
 	entry = frappe.get_doc(ENTRY, name)
 	config = registry.get_source(entry.source_doctype)
 	if config is None or not config.retry_method:
 		return {"ok": False, "message": _("This source does not support retry.")}
 
+	if not retry_available(entry.source_doctype, entry.source_name):
+		return {"ok": False, "message": _("Retry is not available for this entry.")}
+
 	message_log = getattr(frappe.local, "message_log", None)
 	message_count = len(message_log) if message_log is not None else 0
 	try:
 		frappe.get_attr(config.retry_method)(entry.source_name)
 	except Exception as e:
+		frappe.db.rollback()
 		if message_log is not None:
 			del message_log[message_count:]
 		return {"ok": False, "message": cstr(e) or type(e).__name__}
@@ -104,18 +112,24 @@ def retry(name: str) -> dict:
 	return {"ok": True, "message": _("Retry triggered.")}
 
 
-@frappe.whitelist()
-def start_backfill(source_doctype: str | None = None) -> None:
+@frappe.whitelist(methods=["POST"])
+def start_backfill(source_doctype: str | None = None) -> list[str]:
+	"""Enqueue backfill jobs; returns the doctypes enqueued (already queued ones are skipped)."""
 	_check_permission(SETTINGS)
 	doctypes = [source_doctype] if source_doctype else sorted(registry.registered_doctypes())
+	enqueued = []
 	for doctype in doctypes:
-		frappe.enqueue(
+		job = frappe.enqueue(
 			"integration_log.api.backfill",
 			queue="long",
 			deduplicate=True,
+			enqueue_after_commit=True,
 			job_id=f"integration_log_backfill::{frappe.local.site}::{doctype}",
 			source_doctype=doctype,
 		)
+		if job:
+			enqueued.append(doctype)
+	return enqueued
 
 
 def backfill(source_doctype: str | None = None, chunk: int = BACKFILL_CHUNK) -> int:
@@ -125,16 +139,28 @@ def backfill(source_doctype: str | None = None, chunk: int = BACKFILL_CHUNK) -> 
 	for doctype in doctypes:
 		if registry.get_source(doctype) is None:
 			continue
-		start = 0
+		if not frappe.db.table_exists(doctype):
+			continue
+		table = frappe.qb.DocType(doctype)
+		last = None
 		while True:
-			names = frappe.get_all(
-				doctype, pluck="name", order_by="creation asc, name asc", limit_start=start, limit=chunk
+			query = (
+				frappe.qb.from_(table)
+				.select(table.name, table.creation)
+				.orderby(table.creation)
+				.orderby(table.name)
+				.limit(chunk)
 			)
-			for name in names:
+			if last:
+				query = query.where(
+					(table.creation > last[0]) | ((table.creation == last[0]) & (table.name > last[1]))
+				)
+			rows = query.run()
+			for name, _creation in rows:
 				mirror.sync(doctype, name)
 			frappe.db.commit()
-			processed += len(names)
-			if len(names) < chunk:
+			processed += len(rows)
+			if len(rows) < chunk:
 				break
-			start += chunk
+			last = (rows[-1][1], rows[-1][0])
 	return processed

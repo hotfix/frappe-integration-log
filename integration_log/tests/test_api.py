@@ -119,10 +119,51 @@ class TestApi(IntegrationTestCase):
 
 	def test_retry_failure_returns_message(self):
 		self._register([todo_entry(retry_method=f"{HELPERS}.fail_retry")])
-		entry = self._entry(self._todo())
-		self.assertEqual(api.retry(entry.name), {"ok": False, "message": "nope"})
-		entry.reload()
-		self.assertEqual(entry.state, "Open")
+		todo = self._todo()
+		entry = self._entry(todo)
+		frappe.db.commit()  # a failed retry rolls back the open transaction
+		try:
+			self.assertEqual(api.retry(entry.name), {"ok": False, "message": "nope"})
+			entry.reload()
+			self.assertEqual(entry.state, "Open")
+		finally:
+			frappe.db.delete(ENTRY, {"name": entry.name})
+			frappe.db.delete("ToDo", {"name": todo.name})
+			frappe.db.commit()
+
+	def test_retry_respects_can_retry_method(self):
+		self._register(
+			[
+				todo_entry(
+					retry_method=f"{HELPERS}.close_todo",
+					can_retry_method=f"{HELPERS}.can_retry_only_for_marked",
+				)
+			]
+		)
+		todo = self._todo(description="other")
+		entry = self._entry(todo)
+		result = api.retry(entry.name)
+		self.assertFalse(result["ok"])
+		self.assertEqual(frappe.db.get_value("ToDo", todo.name, "status"), "Open")
+
+	def test_retry_failure_rolls_back_partial_write(self):
+		self._register([todo_entry(retry_method=f"{HELPERS}.write_then_fail")])
+		todo = self._todo()
+		entry = self._entry(todo)
+		frappe.db.commit()
+		try:
+			result = api.retry(entry.name)
+			self.assertEqual(result, {"ok": False, "message": "late failure"})
+			self.assertEqual(frappe.db.get_value("ToDo", todo.name, "description"), "Sync failed")
+		finally:
+			frappe.db.delete(ENTRY, {"name": entry.name})
+			frappe.db.delete("ToDo", {"name": todo.name})
+			frappe.db.commit()
+
+	def test_as_list_non_list_json_is_single_name(self):
+		self.assertEqual(api._as_list("123"), ["123"])
+		self.assertEqual(api._as_list("null"), ["null"])
+		self.assertEqual(api._as_list('["a", "b"]'), ["a", "b"])
 
 	def test_retry_without_method(self):
 		self._register([todo_entry()])
@@ -151,7 +192,8 @@ class TestApi(IntegrationTestCase):
 
 	def test_start_backfill_enqueues(self):
 		with patch("frappe.enqueue") as enqueue:
-			api.start_backfill()
+			self.assertEqual(api.start_backfill(), ["ToDo"])
+		self.assertTrue(enqueue.call_args.kwargs["enqueue_after_commit"])
 		self.assertEqual(enqueue.call_args.args[0], "integration_log.api.backfill")
 		self.assertEqual(enqueue.call_args.kwargs["queue"], "long")
 		self.assertTrue(enqueue.call_args.kwargs["deduplicate"])
@@ -166,6 +208,22 @@ class TestApi(IntegrationTestCase):
 		self.assertEqual(frappe.db.count(ENTRY, filters), 3)
 		api.backfill("ToDo", chunk=2)
 		self.assertEqual(frappe.db.count(ENTRY, filters), 3)
+
+	def test_start_backfill_reports_deduplicated(self):
+		with patch("frappe.enqueue", return_value=None):
+			self.assertEqual(api.start_backfill(), [])
+
+	def test_after_install_survives_enqueue_failure(self):
+		from integration_log import install
+
+		title = "Integration Log: backfill could not be started"
+		before = frappe.db.count("Error Log", {"method": title})
+		with (
+			patch.object(registry, "_load_hook_entries", return_value=[todo_entry()]),
+			patch("frappe.enqueue", side_effect=ConnectionError("redis down")),
+		):
+			install.after_install()
+		self.assertEqual(frappe.db.count("Error Log", {"method": title}), before + 1)
 
 	def _aged(self, entry, state, days):
 		entry.state = state

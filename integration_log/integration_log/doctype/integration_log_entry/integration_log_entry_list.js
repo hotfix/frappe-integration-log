@@ -10,7 +10,8 @@ frappe.listview_settings["Integration Log Entry"] = {
 			return [__("Acknowledged"), "gray", "state,=,Acknowledged"];
 		}
 		const colors = { error: "red", warning: "orange", info: "blue" };
-		return [__(frappe.utils.to_title_case(doc.severity || "info")), colors[doc.severity] || "blue", "severity,=," + doc.severity];
+		const severity = doc.severity || "info";
+		return [__(frappe.utils.to_title_case(severity)), colors[severity] || "blue", "severity,=," + severity];
 	},
 
 	onload(listview) {
