@@ -5,6 +5,7 @@ import pymysql
 from frappe.tests import IntegrationTestCase
 
 from integration_log import api, mirror, registry
+from integration_log.tests.helpers import cleanup_test_data
 
 ENTRY = "Integration Log Entry"
 SETTINGS = "Integration Log Settings"
@@ -31,6 +32,7 @@ def raising_severity(doc):
 
 class TestMirror(IntegrationTestCase):
 	def setUp(self):
+		cleanup_test_data(self)
 		self._register([todo_entry()])
 
 	def tearDown(self):

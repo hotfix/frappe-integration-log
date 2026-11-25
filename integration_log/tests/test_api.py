@@ -5,6 +5,7 @@ from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, now_datetime
 
 from integration_log import api, mirror, registry, tasks
+from integration_log.tests.helpers import cleanup_test_data
 from integration_log.tests.test_mirror import todo_entry
 
 ENTRY = "Integration Log Entry"
@@ -16,6 +17,7 @@ MANAGER_USER = "il-manager@example.com"
 
 class TestApi(IntegrationTestCase):
 	def setUp(self):
+		cleanup_test_data(self)
 		self._register([todo_entry(retry_method=f"{HELPERS}.close_todo")])
 
 	def tearDown(self):
