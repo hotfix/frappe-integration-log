@@ -1,9 +1,14 @@
 """Mirror entries of registered log DocTypes into Integration Log Entry.
 
-Runs from ``doc_events["*"]`` inside the source transaction, so a rollback of the
-source also removes its mirror. Mirroring never makes the source save fail: all
-writes happen inside a uniquely named savepoint; on any exception the savepoint is
-rolled back and the failure is reported once (see ``_report_failure``).
+Runs from ``doc_events["*"]`` (``on_change``, which also fires for ``db_set``, and
+``on_trash``) inside the source transaction, so a rollback of the source also removes
+its mirror. All writes happen inside a uniquely named savepoint; on an exception the
+savepoint is rolled back and the failure is reported once (see ``_report_failure``),
+so mirroring does not make the source save fail.
+
+The one exception: when the transaction itself is lost (a deadlock, or the rollback
+to the savepoint fails), the original exception is re-raised. Swallowing it would let
+the caller commit a transaction whose earlier writes are already gone.
 """
 
 import hashlib
@@ -11,7 +16,7 @@ import json
 from collections.abc import Callable
 
 import frappe
-from frappe.utils import add_to_date, cstr, now_datetime, strip_html_tags
+from frappe.utils import add_to_date, cstr, get_datetime, now_datetime, strip_html_tags
 
 from integration_log import registry
 from integration_log.registry import SourceConfig
@@ -23,26 +28,39 @@ MAX_DATA = 140
 FAILED_TITLE = "Integration Log mirror failed: {}"
 # At most one unseen "mirror failed" Error Log per source DocType and hour
 FAILED_DEDUP_HOURS = 1
+DATETIME_FIELDS = frozenset({"occurred_on", "last_seen"})
 
 
 def on_doc_event(doc, method=None) -> None:
-	config = registry.get_source(doc.doctype)
+	if doc.flags.in_delete:
+		# delete_doc fires on_change right after on_trash; do not recreate the mirror
+		return
+	config = _get_source(doc.doctype)
 	if config is None:
 		return
 	_guarded(doc.doctype, lambda: _apply(config, doc))
 
 
 def on_doc_trash(doc, method=None) -> None:
-	if registry.get_source(doc.doctype) is None:
+	if _get_source(doc.doctype) is None:
 		return
 	_guarded(doc.doctype, lambda: _delete_mirror(doc.doctype, doc.name))
+
+
+def _get_source(doctype: str) -> SourceConfig | None:
+	"""Registry lookup that never raises: it runs for every document save on the site."""
+	try:
+		return registry.get_source(doctype)
+	except Exception:
+		_logger().exception(f"Integration Log: registry lookup failed for {doctype}")
+		return None
 
 
 def sync(doctype: str, name: str) -> str | None:
 	"""Re-read a source row and mirror it (for writes via ``frappe.db.set_value``).
 
 	Returns the name of the mirror entry, or None when there is none."""
-	config = registry.get_source(doctype)
+	config = _get_source(doctype)
 	if config is None:
 		return None
 
@@ -76,7 +94,7 @@ def _apply(config: SourceConfig, doc) -> str | None:
 	existing = frappe.db.get_value(
 		ENTRY_DOCTYPE,
 		{"source_doctype": doc.doctype, "source_name": doc.name},
-		["name", "state", "resolved_automatically"],
+		["name", "state", "resolved_automatically", "last_seen"],
 		as_dict=True,
 	)
 
@@ -86,7 +104,9 @@ def _apply(config: SourceConfig, doc) -> str | None:
 			entry = frappe.get_doc({"doctype": ENTRY_DOCTYPE, "state": "Open", **values})
 			entry.insert(ignore_permissions=True, ignore_links=True)
 			return entry.name
-		if existing.state == "Resolved" and existing.resolved_automatically:
+		if existing.state == "Resolved" and existing.resolved_automatically and _changed_since(doc, existing):
+			# Only a real change of the row reopens; re-applying an unchanged row (backfill,
+			# sync, an unrelated update) must not undo a resolution by its group
 			values.update(state="Open", resolved_automatically=0)
 		# Acknowledged stays Acknowledged
 		_update_entry(existing.name, values)
@@ -105,6 +125,12 @@ def _apply(config: SourceConfig, doc) -> str | None:
 	if group_key:
 		_resolve_group(doc.doctype, group_key, doc.creation)
 	return existing.name if existing else None
+
+
+def _changed_since(doc, existing) -> bool:
+	if not existing.last_seen:
+		return True
+	return get_datetime(doc.modified) > get_datetime(existing.last_seen)
 
 
 def _resolve_group(doctype: str, group_key: str, creation) -> None:
@@ -167,11 +193,17 @@ def _first_line(text: str) -> str:
 
 def _update_entry(name: str, values: dict) -> None:
 	entry = frappe.get_doc(ENTRY_DOCTYPE, name)
-	if all(cstr(entry.get(key)) == cstr(value) for key, value in values.items()):
+	if all(_same(key, entry.get(key), value) for key, value in values.items()):
 		return
 	entry.update(values)
 	entry.flags.ignore_links = True
 	entry.save(ignore_permissions=True)
+
+
+def _same(key: str, current, new) -> bool:
+	if key in DATETIME_FIELDS:
+		return (get_datetime(current) if current else None) == (get_datetime(new) if new else None)
+	return cstr(current) == cstr(new)
 
 
 def _delete_mirror(doctype: str, name: str) -> None:
@@ -179,7 +211,11 @@ def _delete_mirror(doctype: str, name: str) -> None:
 
 
 def _guarded(doctype: str, fn: Callable):
-	"""Run fn in its own savepoint; never raise.
+	"""Run fn in its own savepoint; swallow and report its exceptions.
+
+	Re-raises the original exception when the transaction is lost: on a deadlock, and
+	when the rollback to the savepoint fails. Continuing would let the caller commit a
+	half-lost transaction.
 
 	The savepoint name is unique per call, so this nests safely inside savepoints of
 	the calling code (e.g. a consumer rolling back a savepoint per record)."""
@@ -194,7 +230,11 @@ def _guarded(doctype: str, fn: Callable):
 
 	try:
 		result = fn()
-	except Exception:
+	except Exception as e:
+		if _is_deadlock(e):
+			# InnoDB rolled back the whole transaction, savepoints included
+			_logger().exception(FAILED_TITLE.format(doctype))
+			raise
 		# Drop messages raised by frappe.throw while mirroring: not the user's concern
 		if message_log is not None:
 			del message_log[message_count:]
@@ -202,7 +242,7 @@ def _guarded(doctype: str, fn: Callable):
 			frappe.db.rollback(save_point=save_point)
 		except Exception:
 			_logger().exception(FAILED_TITLE.format(doctype))
-			return None
+			raise e from None
 		_report_failure(doctype)
 		return None
 
@@ -211,6 +251,15 @@ def _guarded(doctype: str, fn: Callable):
 	except Exception:
 		_logger().exception(FAILED_TITLE.format(doctype))
 	return result
+
+
+def _is_deadlock(e: Exception) -> bool:
+	if isinstance(e, frappe.QueryDeadlockError):
+		return True
+	try:
+		return bool(frappe.db.is_deadlocked(e))
+	except Exception:
+		return False
 
 
 def _report_failure(doctype: str) -> None:

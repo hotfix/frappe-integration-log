@@ -13,11 +13,11 @@ after_migrate = "integration_log.install.after_migrate"
 
 scheduler_events = {"daily": ["integration_log.tasks.cleanup_done"]}
 
-# Mirror registered log DocTypes; the handler returns immediately for all others
+# Mirror registered log DocTypes; the handler returns immediately for all others.
+# on_change fires once per insert, save, submit, cancel and db_set.
 doc_events = {
 	"*": {
-		"after_insert": "integration_log.mirror.on_doc_event",
-		"on_update": "integration_log.mirror.on_doc_event",
+		"on_change": "integration_log.mirror.on_doc_event",
 		"on_trash": "integration_log.mirror.on_doc_trash",
 	}
 }

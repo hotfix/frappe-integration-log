@@ -1,9 +1,10 @@
 from unittest.mock import patch
 
 import frappe
+import pymysql
 from frappe.tests import IntegrationTestCase
 
-from integration_log import mirror, registry
+from integration_log import api, mirror, registry
 
 ENTRY = "Integration Log Entry"
 SETTINGS = "Integration Log Settings"
@@ -134,6 +135,86 @@ class TestMirror(IntegrationTestCase):
 		lone = self._todo(ref=None)
 		self._todo(status="Closed", ref=None)
 		self.assertEqual(self._mirror(lone).state, "Open")
+
+	def _group_resolved(self):
+		todo = self._todo()
+		self._todo(status="Closed")
+		self.assertEqual(self._mirror(todo).state, "Resolved")
+		return todo
+
+	def test_group_resolved_stays_resolved_on_sync(self):
+		todo = self._group_resolved()
+		mirror.sync("ToDo", todo.name)
+		mirror.on_doc_event(frappe.get_doc("ToDo", todo.name))
+		self.assertEqual(self._mirror(todo).state, "Resolved")
+
+	def test_group_resolved_stays_resolved_on_backfill(self):
+		todo = self._group_resolved()
+		with patch.object(frappe.db, "commit"):
+			api.backfill("ToDo")
+			api.backfill("ToDo")
+		self.assertEqual(self._mirror(todo).state, "Resolved")
+
+	def test_group_resolved_reopens_when_row_updated(self):
+		todo = self._group_resolved()
+		todo.reload()
+		todo.description = "Sync failed again"
+		todo.save(ignore_permissions=True)
+		entry = self._mirror(todo)
+		self.assertEqual((entry.state, entry.resolved_automatically), ("Open", 0))
+		self.assertEqual(entry.title, "Sync failed again")
+
+	def test_db_set_is_mirrored(self):
+		todo = self._todo()
+		todo.db_set("status", "Closed")
+		entry = self._mirror(todo)
+		self.assertEqual((entry.state, entry.source_status), ("Resolved", "Closed"))
+
+	def test_registry_failure_never_raises(self):
+		todo = self._todo()
+		with (
+			patch.object(registry, "get_source", side_effect=ConnectionError("redis down")),
+			patch.object(mirror, "_logger") as logger,
+		):
+			self._set_status(todo, "Closed")
+			self.assertIsNone(mirror.sync("ToDo", todo.name))
+			mirror.on_doc_trash(todo)
+		# one per call above, plus calls for other documents the save writes (e.g. Version)
+		self.assertGreaterEqual(logger.return_value.exception.call_count, 3)
+
+	def test_failed_savepoint_rollback_propagates(self):
+		real_rollback = frappe.db.rollback
+
+		def rollback(*args, **kwargs):
+			if kwargs.get("save_point", "").startswith("integration_log_mirror_"):
+				raise RuntimeError("savepoint does not exist")
+			return real_rollback(*args, **kwargs)
+
+		with (
+			patch.object(mirror, "_apply", side_effect=ValueError("mirror boom")),
+			patch.object(frappe.db, "rollback", side_effect=rollback),
+			patch.object(mirror, "_report_failure") as report,
+			patch.object(mirror, "_logger") as logger,
+			self.assertRaises(ValueError) as ctx,
+		):
+			self._todo()
+		self.assertEqual(str(ctx.exception), "mirror boom")
+		report.assert_not_called()
+		self.assertTrue(logger.return_value.exception.called)
+
+	def test_deadlock_propagates(self):
+		deadlocks = (
+			frappe.QueryDeadlockError("Deadlock found"),
+			pymysql.err.OperationalError(1213, "Deadlock found when trying to get lock"),
+		)
+		for exc in deadlocks:
+			with (
+				patch.object(mirror, "_apply", side_effect=exc),
+				patch.object(mirror, "_report_failure") as report,
+				self.assertRaises(type(exc)),
+			):
+				self._todo()
+			report.assert_not_called()
 
 	def test_trash_deletes_mirror(self):
 		todo = self._todo()
