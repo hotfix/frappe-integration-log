@@ -6,3 +6,6 @@ app_email = "info@hotfix.example"
 app_license = "GPLv3"
 
 required_apps = []
+
+# Registry cache must reflect hook changes after every migrate
+after_migrate = ["integration_log.registry.clear_cache"]
