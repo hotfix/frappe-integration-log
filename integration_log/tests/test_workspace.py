@@ -33,6 +33,20 @@ class TestWorkspace(IntegrationTestCase):
 			{"Integration Log Entry", "Integration Log Settings", "Integration Log by Source"},
 		)
 
+	def test_sidebar_shipped(self):
+		self.assertTrue(frappe.db.exists("Sidebar", "Integration Log"))
+		sidebar = frappe.get_doc("Sidebar", "Integration Log")
+		self.assertEqual(
+			(sidebar.module, sidebar.app, sidebar.standard), ("Integration Log", "integration_log", 1)
+		)
+		expected = {
+			"Integration Log",
+			"Integration Log Entry",
+			"Integration Log Settings",
+			"Integration Log by Source",
+		}
+		self.assertTrue(expected <= {item.link_to for item in sidebar.items})
+
 	def test_german_translations(self):
 		frappe.local.lang = "de"
 		try:

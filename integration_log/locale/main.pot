@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Integration Log VERSION\n"
 "Report-Msgid-Bugs-To: info@hotfix.example\n"
-"POT-Creation-Date: 2026-11-25 17:16+0000\n"
-"PO-Revision-Date: 2026-11-25 17:16+0000\n"
+"POT-Creation-Date: 2026-11-25 17:49+0000\n"
+"PO-Revision-Date: 2026-11-25 17:49+0000\n"
 "Last-Translator: info@hotfix.example\n"
 "Language-Team: info@hotfix.example\n"
 "MIME-Version: 1.0\n"
@@ -75,19 +75,28 @@ msgstr ""
 msgid "Group Key"
 msgstr ""
 
+#. Label of a Sidebar Item
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:17
+msgid "Home"
+msgstr ""
+
 #. Label of the include_error_log (Check) field in DocType 'Integration Log
 #. Settings'
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:11
 msgid "Include Error Log"
 msgstr ""
 
+#. Title of a Sidebar
 #. Name of a Workspace
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:94
 #: integration_log/integration_log/workspace/integration_log/integration_log.json:11
 msgid "Integration Log"
 msgstr ""
 
 #. Name of a DocType
+#. Label of a Sidebar Item
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:178
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:33
 msgid "Integration Log Entry"
 msgstr ""
 
@@ -98,12 +107,16 @@ msgid "Integration Log Manager"
 msgstr ""
 
 #. Name of a DocType
-#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:38
+#. Label of a Sidebar Item
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:37
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:80
 msgid "Integration Log Settings"
 msgstr ""
 
 #. Name of a report
+#. Label of a Sidebar Item
 #: integration_log/integration_log/report/integration_log_by_source/integration_log_by_source.json:11
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:49
 msgid "Integration Log by Source"
 msgstr ""
 
@@ -224,7 +237,9 @@ msgstr ""
 msgid "Retry triggered."
 msgstr ""
 
+#. Label of a Sidebar Item
 #. Label of a shortcut in the Integration Log Workspace
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:65
 #: integration_log/integration_log/workspace/integration_log/integration_log.json:58
 msgid "Settings"
 msgstr ""

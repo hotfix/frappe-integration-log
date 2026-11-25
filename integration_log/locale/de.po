@@ -75,6 +75,11 @@ msgstr "Einträge nach Quelle"
 msgid "Group Key"
 msgstr "Gruppenschlüssel"
 
+#. Label of a Sidebar Item
+#: integration_log/integration_log/sidebar/integration_log/integration_log.json:17
+msgid "Home"
+msgstr "Startseite"
+
 #. Label of the include_error_log (Check) field in DocType 'Integration Log
 #. Settings'
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:11

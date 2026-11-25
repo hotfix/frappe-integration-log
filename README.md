@@ -20,7 +20,8 @@ bench --site your.site install-app integration_log
 ```
 
 Installing creates the role `Integration Log Manager` and queues a backfill of existing rows of all
-registered sources. `System Manager` and `Integration Log Manager` can work with the entries.
+registered sources. `System Manager` and `Integration Log Manager` can work with the entries. Only
+`System Manager` can change **Integration Log Settings**.
 
 ## Versions and updates
 
@@ -85,7 +86,8 @@ integration_logs = [
 | `can_retry_method` | str (dotted path) | none | Decides per row whether Retry is offered. |
 
 Entries that fail validation (missing or unknown field, unknown severity, bad `mirror_levels`,
-`link_fields` without two items, DocType not installed) are skipped and reported once as an Error Log
+`link_fields` without two items, DocType not installed, `Integration Log Entry` or
+`Integration Log Settings` itself) are skipped and reported once as an Error Log
 titled "Integration Log: invalid registry entry". If a DocType is registered twice, the first entry
 wins. The registry is cached and rebuilt on every `bench migrate`.
 
@@ -100,8 +102,12 @@ successful run) is not mirrored.
 
 ### Mirroring, groups and states
 
-An entry has the states `Open`, `Acknowledged` and `Resolved`. Mirroring runs on every insert and
-update of the source row, inside the same transaction, and never makes the source save fail.
+An entry has the states `Open`, `Acknowledged` and `Resolved`. Mirroring runs on every change of the
+source row (insert, save, submit, cancel and `db_set`, through the `on_change` document event),
+inside the same transaction. A failure while mirroring is rolled back to a savepoint and reported in
+the Error Log; it does not make the source save fail. The one exception: if the transaction itself is
+lost (a database deadlock, or the rollback to the savepoint fails), the original exception is raised
+to the caller, because committing the rest of the transaction would silently lose earlier writes.
 
 - A new row with a mirrored severity creates an `Open` entry. Later updates of the row refresh the
   entry (severity, message, status, last seen).
@@ -114,22 +120,25 @@ update of the source row, inside the same transaction, and never makes the sourc
 - **Acknowledged stays acknowledged.** An acknowledged entry is never reopened or resolved by the
   mirror, even if the source row changes again. Only the displayed data is refreshed. A user can reopen
   it manually.
-- An automatically resolved entry opens again if its own source row is mirrored again.
+- An automatically resolved entry opens again when its own source row changes again (its `modified`
+  is newer than the entry's *last seen*). Re-applying an unchanged row, for example by a backfill or
+  `sync`, does not reopen it.
 - Deleting the source row deletes its mirror.
 
 ### Writers that bypass document events
 
-`frappe.db.set_value` and raw SQL do not fire document events. After such a write, call:
+`frappe.db.set_value` and raw SQL do not fire document events (`doc.db_set` does). After such a
+write, call `sync`, guarded so the consumer keeps working without Integration Log:
 
 ```python
-from integration_log.mirror import sync
+import frappe
 
-sync("My Sync Log", name)
+if "integration_log" in frappe.get_installed_apps():
+	frappe.get_attr("integration_log.mirror.sync")("My Sync Log", name)
 ```
 
 `sync` re-reads the row and mirrors it (or removes the mirror when the row is gone). It returns the
-entry name or `None`. A consumer must not import `integration_log` unconditionally; see the guard in
-the next section.
+entry name or `None`, and like the document events it only raises when the transaction is lost.
 
 ### Retry contract
 
@@ -144,7 +153,9 @@ def can_retry_log(source_name: str) -> bool:
 
 - `retry_method(source_name)` receives the name of the source row. The consumer checks its own
   permissions and may commit. If it raises, Integration Log rolls back the writes of the request that
-  are not committed yet and shows the exception text. On success the mirror is synced again.
+  are not committed yet and shows the exception text. On success the mirror is synced again and the
+  user sees the generic message "Retry triggered."; details about what the retry did come from the
+  consumer's own messages (for example `frappe.msgprint`), which are shown as well.
 - `can_retry_method(source_name) -> bool` decides whether the button is shown. Without it, Retry is
   always offered for sources with a `retry_method`. An exception counts as "not available".
 - A consumer must not import `integration_log`. Guard every use with the installed apps and resolve
@@ -204,15 +215,17 @@ source named "System" (severity always `error`, title from the method, linked do
 
 A daily job deletes `Acknowledged` and `Resolved` entries that were last modified more than
 *Retention (days)* ago (default 90, `0` = never delete). It also deletes mirrors whose source row no
-longer exists, whatever their state (Frappe's own log clearing deletes rows without a trash event).
+longer exists, whatever their state (Frappe's own log clearing deletes rows without a trash event),
+and all mirrors of a source DocType that no longer exists (for example after uninstalling the
+consumer app).
 `Open` entries are never removed because of age.
 
 ## Backfill
 
 Rows that existed before the app was installed, or before a source was registered, are mirrored by a
 background job. It is queued on install and can be started again with the button *Backfill now* in
-**Integration Log Settings** (or `integration_log.api.start_backfill`). Running it more than once is
-safe. After adding a source, run `bench --site your.site migrate` so the registry is rebuilt, then
+**Integration Log Settings** (or `integration_log.api.start_backfill`); both need write permission
+on the settings, so only `System Manager` can start it. Running it more than once is safe. After adding a source, run `bench --site your.site migrate` so the registry is rebuilt, then
 start the backfill.
 
 ## Permissions
@@ -220,14 +233,19 @@ start the backfill.
 The mirror copies message texts of the source rows into `Integration Log Entry` without checking the
 permissions on the source DocType. Everyone with access to the entries (`Integration Log Manager`,
 `System Manager`) sees these texts. Do not register logs whose messages contain data that these roles
-may not see. Acknowledge, reopen, retry and backfill need write permission on the entry or the
-settings, and the API methods accept POST only.
+may not see. Acknowledge, reopen and retry need write permission on the entry; backfill needs write
+permission on the settings. **Integration Log Settings** can be read by `Integration Log Manager` but
+only changed by `System Manager`, because the *Include Error Log* option would expose Error Log
+tracebacks. The state-changing API methods (`acknowledge`, `reopen`, `retry`, `start_backfill`)
+accept POST only.
 
 ## Workspace
 
 The workspace *Integration Log* (German: *Integrations-Protokoll*) has the number cards *Open Errors*
 and *Open Warnings*, the chart *Open by Source*, and shortcuts to the open entries, the settings and
-the report *Integration Log by Source*.
+the report *Integration Log by Source*. The app ships a standard `Sidebar` for the module, so the
+module shows up in the Frappe v16 desk navigation with links to the workspace, the entries, the
+report and the settings.
 
 ## Translations
 
