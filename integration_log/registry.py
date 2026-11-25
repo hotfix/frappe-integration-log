@@ -24,6 +24,7 @@ INVALID_ENTRY_TITLE = "Integration Log: invalid registry entry"
 SETTINGS_DOCTYPE = "Integration Log Settings"
 CACHE_KEY = "integration_log_registry"
 LOCAL_ATTR = "integration_log_registry"
+BUILDING_ATTR = "integration_log_registry_building"
 
 
 def severity_rank(severity: str) -> int:
@@ -65,7 +66,8 @@ def _load_hook_entries() -> list[dict]:
 def resolve_severity(config: SourceConfig, doc) -> str:
 	"""Severity of a log document: severity_method wins, then severity_map, else warning."""
 	if config.severity_method:
-		return frappe.get_attr(config.severity_method)(doc)
+		severity = frappe.get_attr(config.severity_method)(doc)
+		return severity if severity in SEVERITIES else "warning"
 	if not config.status_field:
 		return "error"
 	return config.severity_map.get(doc.get(config.status_field), "warning")
@@ -106,7 +108,8 @@ def _parse_entry(entry: dict) -> SourceConfig:
 		if severity not in SEVERITIES:
 			raise ValueError(f"invalid severity {severity!r} for status {status!r}")
 
-	mirror_levels = frozenset(entry.get("mirror_levels") or DEFAULT_MIRROR_LEVELS)
+	raw_levels = entry.get("mirror_levels")
+	mirror_levels = DEFAULT_MIRROR_LEVELS if raw_levels is None else frozenset(raw_levels)
 	if not mirror_levels <= set(SEVERITIES):
 		raise ValueError(f"invalid mirror_levels {sorted(mirror_levels)}")
 
@@ -133,7 +136,7 @@ def _parse_entry(entry: dict) -> SourceConfig:
 	)
 
 
-def _build_registry() -> dict[str, SourceConfig]:
+def _build_registry(errors: list[str]) -> dict[str, SourceConfig]:
 	registry: dict[str, SourceConfig] = {}
 
 	for entry in _load_hook_entries():
@@ -141,8 +144,8 @@ def _build_registry() -> dict[str, SourceConfig]:
 			config = _parse_entry(entry)
 			if config.doctype in registry:
 				raise ValueError(f"duplicate doctype {config.doctype}, first entry wins")
-		except ValueError as e:
-			frappe.log_error(title=INVALID_ENTRY_TITLE, message=f"{e}\n\n{entry!r}")
+		except Exception as e:
+			errors.append(f"{type(e).__name__}: {e}\n\n{entry!r}")
 			continue
 		registry[config.doctype] = config
 
@@ -158,11 +161,28 @@ def get_registry() -> dict[str, SourceConfig]:
 		return registry
 
 	registry = frappe.cache.get_value(CACHE_KEY)
-	if registry is None:
-		registry = _build_registry()
-		frappe.cache.set_value(CACHE_KEY, registry)
+	if registry is not None:
+		setattr(frappe.local, LOCAL_ATTR, registry)
+		return registry
 
-	setattr(frappe.local, LOCAL_ATTR, registry)
+	if getattr(frappe.local, BUILDING_ATTR, False):
+		# Re-entrant call (e.g. logging an error triggers a handler): do not rebuild
+		return {}
+
+	setattr(frappe.local, BUILDING_ATTR, True)
+	try:
+		errors: list[str] = []
+		registry = _build_registry(errors)
+		# Store first, so anything triggered by logging below sees a warm cache
+		frappe.cache.set_value(CACHE_KEY, registry)
+		setattr(frappe.local, LOCAL_ATTR, registry)
+		for message in errors:
+			try:
+				frappe.log_error(title=INVALID_ENTRY_TITLE, message=message)
+			except Exception:
+				pass
+	finally:
+		setattr(frappe.local, BUILDING_ATTR, False)
 	return registry
 
 
@@ -176,4 +196,5 @@ def registered_doctypes() -> frozenset[str]:
 
 def clear_cache() -> None:
 	setattr(frappe.local, LOCAL_ATTR, None)
+	setattr(frappe.local, BUILDING_ATTR, False)
 	frappe.cache.delete_value(CACHE_KEY)

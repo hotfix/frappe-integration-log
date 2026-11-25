@@ -63,6 +63,47 @@ class TestRegistry(IntegrationTestCase):
 		self.assertEqual(set(reg), {"ToDo"})
 		self.assertEqual(self._error_count() - before, 4)
 
+	def test_malformed_entries_do_not_break_registry(self):
+		before = self._error_count()
+		entries = [
+			todo_entry(doctype="User", link_fields=5),
+			todo_entry(doctype="Note", mirror_levels=5),
+			todo_entry(doctype="Role", severity_map=["x"]),
+			todo_entry(doctype="Country", context_fields=5),
+			todo_entry(),
+		]
+		reg = self._build(entries)
+		self.assertEqual(set(reg), {"ToDo"})
+		self.assertEqual(self._error_count() - before, 4)
+
+	def test_empty_mirror_levels_kept(self):
+		reg = self._build([todo_entry(mirror_levels=[])])
+		self.assertEqual(reg["ToDo"].mirror_levels, frozenset())
+
+	def test_invalid_severity_method_result_is_warning(self):
+		config = self._build([todo_entry(severity_method="x.y")])["ToDo"]
+		with patch("frappe.get_attr", return_value=lambda doc: "fatal"):
+			self.assertEqual(registry.resolve_severity(config, frappe._dict()), "warning")
+
+	def test_reentrant_log_error_does_not_recurse(self):
+		calls = []
+		real = frappe.log_error
+
+		def reentrant(*args, **kwargs):
+			calls.append(1)
+			registry.registered_doctypes()
+			return real(*args, **kwargs)
+
+		registry.clear_cache()
+		before = self._error_count()
+		with (
+			patch.object(registry, "_load_hook_entries", return_value=[todo_entry(), todo_entry()]),
+			patch.object(frappe, "log_error", side_effect=reentrant),
+		):
+			self.assertEqual(registry.registered_doctypes(), frozenset({"ToDo"}))
+		self.assertEqual(len(calls), 1)
+		self.assertEqual(self._error_count() - before, 1)
+
 	def test_duplicate_doctype_first_wins(self):
 		before = self._error_count()
 		reg = self._build([todo_entry(source="First"), todo_entry(source="Second")])
