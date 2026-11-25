@@ -1,0 +1,21 @@
+{
+ "app": "integration_log",
+ "creation": "2026-11-25 18:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "scroll-text",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Integration Log",
+ "link_to": "Integration Log",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-11-25 18:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Integration Log",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "sidebar": "",
+ "standard": 1
+}

@@ -34,6 +34,8 @@ class TestWorkspace(IntegrationTestCase):
 		)
 
 	def test_sidebar_shipped(self):
+		# In v16.55 the module-keyed Sidebar is the live navigation store; the Workspace
+		# Sidebar doctype is an inert archive, so no Workspace Sidebar is shipped.
 		self.assertTrue(frappe.db.exists("Sidebar", "Integration Log"))
 		sidebar = frappe.get_doc("Sidebar", "Integration Log")
 		self.assertEqual(
@@ -46,6 +48,50 @@ class TestWorkspace(IntegrationTestCase):
 			"Integration Log by Source",
 		}
 		self.assertTrue(expected <= {item.link_to for item in sidebar.items})
+
+	def test_apps_screen_tile(self):
+		from frappe.apps import get_apps
+
+		hooks = frappe.get_hooks("add_to_apps_screen", app_name="integration_log")
+		self.assertEqual(hooks[0]["route"], "/desk/integration-log")
+		self.assertIn("integration_log", [a["name"] for a in get_apps()])
+
+	def test_desktop_icon_fixture(self):
+		path = frappe.get_app_path("integration_log", "desktop_icon", "integration_log.json")
+		with open(path) as f:
+			data = json.load(f)
+		self.assertEqual(
+			(data["name"], data["link_type"], data["link_to"], data["app"], data["standard"]),
+			("Integration Log", "Workspace Sidebar", "Integration Log", "integration_log", 1),
+		)
+
+	def test_desktop_icon_synced_in_icon_mode_and_idempotent(self):
+		# Icon rows exist only when the site is in "Desktop Icons" mode, so force the guard.
+		from unittest.mock import patch
+
+		from frappe.model.sync import sync_for
+
+		self.addCleanup(self._remove_icon)
+		with patch("frappe.desk.doctype.desktop_icon.desktop_icon.is_desktop_icons_page", return_value=True):
+			sync_for("integration_log", force=True)
+			sync_for("integration_log", force=True)
+		self.assertEqual(frappe.db.count("Desktop Icon", {"name": "Integration Log"}), 1)
+		self.assertEqual(
+			frappe.db.get_value(
+				"Desktop Icon", "Integration Log", ["link_type", "link_to", "app"], as_dict=True
+			),
+			{"link_type": "Workspace Sidebar", "link_to": "Integration Log", "app": "integration_log"},
+		)
+		# sidebar untouched by repeated sync
+		self.assertEqual(frappe.db.count("Sidebar", {"name": "Integration Log"}), 1)
+		self.assertEqual(len(frappe.get_doc("Sidebar", "Integration Log").items), 5)
+
+	def _remove_icon(self):
+		if frappe.db.exists("Desktop Icon", "Integration Log"):
+			# db.delete, not delete_doc: in developer mode delete_doc removes the shipped fixture file
+			frappe.db.delete("Desktop Icon", {"name": "Integration Log"})
+			frappe.db.commit()
+			frappe.clear_cache()
 
 	def test_german_translations(self):
 		frappe.local.lang = "de"

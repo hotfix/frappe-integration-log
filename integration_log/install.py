@@ -34,3 +34,8 @@ def ensure_unique_index():
 	if not frappe.db.table_exists("Integration Log Entry"):
 		return
 	frappe.db.add_unique("Integration Log Entry", ["source_doctype", "source_name"])
+
+
+def has_app_permission() -> bool:
+	"""Apps-screen tile is shown to the roles that can open the workspace."""
+	return bool({"System Manager", ROLE} & set(frappe.get_roles()))

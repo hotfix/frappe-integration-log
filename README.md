@@ -247,6 +247,12 @@ the report *Integration Log by Source*. The app ships a standard `Sidebar` for t
 module shows up in the Frappe v16 desk navigation with links to the workspace, the entries, the
 report and the settings.
 
+On the home screen the app appears as the tile *Integration Log* (hook `add_to_apps_screen`, shown to
+System Manager and Integration Log Manager). Sites that use the "Desktop Icons" desktop mode get the
+shipped Desktop Icon `Integration Log` instead (`desktop_icon/integration_log.json`). Both open the
+workspace. After pulling an update run `bench --site <site> migrate` and `bench build` (or restart) so the
+tile logo asset is linked.
+
 ## Translations
 
 German translations are in `integration_log/locale/de.po`. Update the template with
