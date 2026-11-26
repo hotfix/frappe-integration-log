@@ -56,8 +56,9 @@ msgstr "Vorgabe der App"
 
 #. Label of the area (Data) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json
+msgctxt "Integration Log Entry"
 msgid "Area"
-msgstr "Fläche"
+msgstr "Bereich"
 
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:12
 msgid "Backfill is already queued or running."

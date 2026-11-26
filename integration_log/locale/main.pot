@@ -56,6 +56,7 @@ msgstr ""
 
 #. Label of the area (Data) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json
+msgctxt "Integration Log Entry"
 msgid "Area"
 msgstr ""
 
