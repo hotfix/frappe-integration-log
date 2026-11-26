@@ -48,6 +48,12 @@ msgstr "Erledigt von"
 msgid "Acknowledged On"
 msgstr "Erledigt am"
 
+#. Label of the app_default (Data) field in DocType 'Integration Log Source
+#. Setting'
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "App Default"
+msgstr "Vorgabe der App"
+
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:12
 msgid "Backfill is already queued or running."
 msgstr "Der Nachimport ist bereits eingeplant oder läuft."
@@ -97,10 +103,21 @@ msgstr "Integrations-Protokoll-Manager"
 msgid "Integration Log Settings"
 msgstr "Integrations-Protokoll-Einstellungen"
 
+#. Name of a DocType
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "Integration Log Source Setting"
+msgstr "Integrations-Protokoll-Quelleneinstellung"
+
 #. Name of a report
 #: integration_log/integration_log/report/integration_log_by_source/integration_log_by_source.json:11
 msgid "Integration Log by Source"
 msgstr "Integrations-Protokoll nach Quelle"
+
+#. Label of the min_severity (Select) field in DocType 'Integration Log Source
+#. Setting'
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "Minimum Severity"
+msgstr "Ab Stufe"
 
 #. Description of the 'Include Error Log' (Check) field in DocType 'Integration
 #. Log Settings'
@@ -112,6 +129,12 @@ msgstr "Fehlerprotokoll-Einträge in das Integrations-Protokoll spiegeln."
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:124
 msgid "Occurred On"
 msgstr "Aufgetreten am"
+
+#. Description of the 'Sources' (Table) field in DocType 'Integration Log
+#. Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json
+msgid "One row per registered source. Empty minimum severity = default of the app."
+msgstr "Eine Zeile je registrierter Quelle. Leeres Feld Ab Stufe = Vorgabe der App."
 
 #. Label of a shortcut in the Integration Log Workspace
 #: integration_log/integration_log/workspace/integration_log/integration_log.json:44
@@ -177,6 +200,11 @@ msgstr "Schweregrad"
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:76
 msgid "Source Status"
 msgstr "Quellstatus"
+
+#. Label of the sources (Table) field in DocType 'Integration Log Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json
+msgid "Sources"
+msgstr "Quellen"
 
 #: integration_log/api.py:97
 msgid "This source does not support retry."

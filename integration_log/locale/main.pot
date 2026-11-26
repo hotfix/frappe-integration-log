@@ -48,6 +48,12 @@ msgstr ""
 msgid "Acknowledged On"
 msgstr ""
 
+#. Label of the app_default (Data) field in DocType 'Integration Log Source
+#. Setting'
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "App Default"
+msgstr ""
+
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js:12
 msgid "Backfill is already queued or running."
 msgstr ""
@@ -70,6 +76,10 @@ msgstr ""
 msgid "Entries by Source"
 msgstr ""
 
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Error"
+msgstr ""
+
 #. Label of the group_key (Data) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:96
 msgid "Group Key"
@@ -84,6 +94,10 @@ msgstr ""
 #. Settings'
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:11
 msgid "Include Error Log"
+msgstr ""
+
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Info"
 msgstr ""
 
 #. Title of a Sidebar
@@ -113,6 +127,11 @@ msgstr ""
 msgid "Integration Log Settings"
 msgstr ""
 
+#. Name of a DocType
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "Integration Log Source Setting"
+msgstr ""
+
 #. Name of a report
 #. Label of a Sidebar Item
 #: integration_log/integration_log/report/integration_log_by_source/integration_log_by_source.json:11
@@ -136,6 +155,12 @@ msgstr ""
 msgid "Message"
 msgstr ""
 
+#. Label of the min_severity (Select) field in DocType 'Integration Log Source
+#. Setting'
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "Minimum Severity"
+msgstr ""
+
 #. Description of the 'Include Error Log' (Check) field in DocType 'Integration
 #. Log Settings'
 #: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json:13
@@ -156,6 +181,12 @@ msgstr ""
 #. Label of the occurred_on (Datetime) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:124
 msgid "Occurred On"
+msgstr ""
+
+#. Description of the 'Sources' (Table) field in DocType 'Integration Log
+#. Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json
+msgid "One row per registered source. Empty minimum severity = default of the app."
 msgstr ""
 
 #. Option for the 'State' (Select) field in DocType 'Integration Log Entry'
@@ -270,6 +301,11 @@ msgstr ""
 msgid "Source Status"
 msgstr ""
 
+#. Label of the sources (Table) field in DocType 'Integration Log Settings'
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.json
+msgid "Sources"
+msgstr ""
+
 #. Label of the state (Select) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:32
 msgid "State"
@@ -290,6 +326,10 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
+msgid "Warning"
+msgstr ""
+
 #. Option for the 'Severity' (Select) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:45
 msgid "error"
@@ -308,17 +348,4 @@ msgstr ""
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:24
 #, python-brace-format
 msgid "{0} entries updated"
-msgstr ""
-
-
-#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
-msgid "Error"
-msgstr ""
-
-#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
-msgid "Warning"
-msgstr ""
-
-#: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry_list.js:20
-msgid "Info"
 msgstr ""

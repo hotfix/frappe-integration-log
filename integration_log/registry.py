@@ -11,9 +11,12 @@ Apps declare their log DocType in hooks.py::
                 "message_field": "error_message",
             }
         ]
+
+Integration Log Settings has one row per source (``sources``): ``enabled`` and
+``min_severity`` override the hook entry. A source without a row keeps the hook values.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import frappe
 from frappe.model import default_fields
@@ -23,8 +26,9 @@ DEFAULT_MIRROR_LEVELS = frozenset({"error", "warning"})
 INVALID_ENTRY_TITLE = "Integration Log: invalid registry entry"
 SETTINGS_DOCTYPE = "Integration Log Settings"
 ENTRY_DOCTYPE = "Integration Log Entry"
+SOURCE_SETTING_DOCTYPE = "Integration Log Source Setting"
 # Mirroring these into themselves would recurse
-OWN_DOCTYPES = frozenset({ENTRY_DOCTYPE, SETTINGS_DOCTYPE})
+OWN_DOCTYPES = frozenset({ENTRY_DOCTYPE, SETTINGS_DOCTYPE, SOURCE_SETTING_DOCTYPE})
 CACHE_KEY = "integration_log_registry"
 LOCAL_ATTR = "integration_log_registry"
 BUILDING_ATTR = "integration_log_registry_building"
@@ -32,6 +36,17 @@ BUILDING_ATTR = "integration_log_registry_building"
 
 def severity_rank(severity: str) -> int:
 	return SEVERITIES.index(severity)
+
+
+def effective_levels(min_severity: str) -> frozenset[str]:
+	"""All severities at or above min_severity."""
+	rank = severity_rank(min_severity)
+	return frozenset(s for s in SEVERITIES if severity_rank(s) >= rank)
+
+
+def format_levels(levels: frozenset[str]) -> str:
+	"""Levels as text, most severe first, e.g. "error, warning"."""
+	return ", ".join(s for s in reversed(SEVERITIES) if s in levels)
 
 
 @dataclass(frozen=True)
@@ -49,6 +64,11 @@ class SourceConfig:
 	retry_method: str | None = None
 	can_retry_method: str | None = None
 	severity_method: str | None = None
+	# From the source's settings row: a disabled source is kept in the registry (so the
+	# settings can list it) but not mirrored
+	enabled: bool = True
+	# The hook's mirror levels, before a settings row's min_severity replaced them
+	app_levels: frozenset[str] = DEFAULT_MIRROR_LEVELS
 
 
 ERROR_LOG_SOURCE = SourceConfig(
@@ -83,6 +103,38 @@ def _include_error_log() -> bool:
 		return bool(frappe.db.get_single_value(SETTINGS_DOCTYPE, "include_error_log", cache=True))
 	except Exception:
 		return False
+
+
+def _source_settings() -> dict[str, dict]:
+	"""Settings rows by source DocType; {} when the table does not exist (yet) or on any error."""
+	try:
+		if not frappe.db.table_exists(SOURCE_SETTING_DOCTYPE):
+			return {}
+		rows = frappe.get_all(
+			SOURCE_SETTING_DOCTYPE,
+			filters={"parent": SETTINGS_DOCTYPE, "parenttype": SETTINGS_DOCTYPE, "parentfield": "sources"},
+			fields=["source_doctype", "enabled", "min_severity"],
+			order_by="idx asc",
+		)
+	except Exception:
+		return {}
+
+	settings: dict[str, dict] = {}
+	for row in rows:
+		if row.source_doctype and row.source_doctype not in settings:
+			min_severity = row.min_severity if row.min_severity in SEVERITIES else None
+			settings[row.source_doctype] = {"enabled": bool(row.enabled), "min_severity": min_severity}
+	return settings
+
+
+def _apply_settings(config: SourceConfig, settings: dict | None) -> SourceConfig:
+	config = replace(config, app_levels=config.mirror_levels)
+	if not settings:
+		return config
+	levels = config.mirror_levels
+	if settings.get("min_severity"):
+		levels = effective_levels(settings["min_severity"])
+	return replace(config, enabled=settings["enabled"], mirror_levels=levels)
 
 
 def _parse_entry(entry: dict) -> SourceConfig:
@@ -157,7 +209,8 @@ def _build_registry(errors: list[str]) -> dict[str, SourceConfig]:
 	if "Error Log" not in registry and _include_error_log():
 		registry["Error Log"] = ERROR_LOG_SOURCE
 
-	return registry
+	settings = _source_settings()
+	return {doctype: _apply_settings(config, settings.get(doctype)) for doctype, config in registry.items()}
 
 
 def get_registry() -> dict[str, SourceConfig]:

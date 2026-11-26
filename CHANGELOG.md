@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Per-source settings: table *Sources* in Integration Log Settings with *Enabled* and *Minimum
+  Severity* per registered source. A disabled source is not mirrored (existing entries stay as they
+  are, backfill skips it); a minimum severity replaces the hook's `mirror_levels`. Rows are added
+  when the settings form is opened; sources without a row keep the hook values.
+
 ## [0.1.0] - unreleased
 
 ### Added

@@ -2,6 +2,7 @@
  "issingle": 1,
  "field_order": [
   "include_error_log",
+  "sources",
   "retention_days"
  ],
  "fields": [
@@ -11,6 +12,13 @@
    "label": "Include Error Log",
    "default": "0",
    "description": "Mirror Error Log records into the integration log."
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Integration Log Source Setting",
+   "description": "One row per registered source. Empty minimum severity = default of the app."
   },
   {
    "fieldname": "retention_days",
@@ -38,6 +46,6 @@
  "engine": "InnoDB",
  "editable_grid": 0,
  "owner": "Administrator",
- "modified": "2026-11-25 18:00:00.000000",
+ "modified": "2026-11-26 12:00:00.000000",
  "modified_by": "Administrator"
 }

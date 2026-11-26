@@ -211,6 +211,23 @@ In **Integration Log Settings**, tick *Include Error Log* to mirror Frappe's Err
 source named "System" (severity always `error`, title from the method, linked document from
 `reference_doctype` / `reference_name`). Error Logs are not mirrored while the option is off.
 
+## Source settings
+
+The table *Sources* in **Integration Log Settings** has one row per registered source (each hook
+entry, plus "System" while *Include Error Log* is ticked). Rows for new sources are added when the
+settings form is opened; save the form to keep them.
+
+- *Enabled*: untick to stop mirroring the source. No new entries are created, existing entries are
+  neither updated nor resolved, and the backfill skips the source. Deleting a source row still
+  deletes its mirror, and acknowledge, reopen and retry keep working on existing entries.
+- *Minimum Severity*: mirror every severity from the chosen one upwards (`info` = all, `warning` =
+  warning and error, `error` = errors only). Empty uses the app's `mirror_levels`, shown in
+  *App Default*. A row that falls below the level resolves its open entry on its next change.
+
+A source without a row (for example before the settings were ever opened) keeps the hook values.
+Rows of sources that are no longer registered are ignored and can be deleted. Changes apply as soon
+as the settings are saved.
+
 ## Retention and cleanup
 
 A daily job deletes `Acknowledged` and `Resolved` entries that were last modified more than

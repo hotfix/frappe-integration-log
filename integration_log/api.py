@@ -120,6 +120,9 @@ def start_backfill(source_doctype: str | None = None) -> list[str]:
 	doctypes = [source_doctype] if source_doctype else sorted(registry.registered_doctypes())
 	enqueued = []
 	for doctype in doctypes:
+		config = registry.get_source(doctype)
+		if config is not None and not config.enabled:
+			continue
 		# Frappe namespaces the job id by site itself. enqueue() returns None with
 		# enqueue_after_commit, so deduplicate by asking the queue ourselves.
 		job_id = f"integration_log_backfill::{doctype}"
@@ -138,11 +141,14 @@ def start_backfill(source_doctype: str | None = None) -> list[str]:
 
 
 def backfill(source_doctype: str | None = None, chunk: int = BACKFILL_CHUNK) -> int:
-	"""Mirror existing source rows (all registered sources when none given). Idempotent."""
+	"""Mirror existing source rows (all registered sources when none given). Idempotent.
+
+	Disabled sources are skipped."""
 	doctypes = [source_doctype] if source_doctype else sorted(registry.registered_doctypes())
 	processed = 0
 	for doctype in doctypes:
-		if registry.get_source(doctype) is None:
+		config = registry.get_source(doctype)
+		if config is None or not config.enabled:
 			continue
 		if not frappe.db.table_exists(doctype):
 			continue

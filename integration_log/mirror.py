@@ -36,12 +36,13 @@ def on_doc_event(doc, method=None) -> None:
 		# delete_doc fires on_change right after on_trash; do not recreate the mirror
 		return
 	config = _get_source(doc.doctype)
-	if config is None:
+	if config is None or not config.enabled:
 		return
 	_guarded(doc.doctype, lambda: _apply(config, doc))
 
 
 def on_doc_trash(doc, method=None) -> None:
+	# Also for a disabled source: a mirror never outlives its source row
 	if _get_source(doc.doctype) is None:
 		return
 	_guarded(doc.doctype, lambda: _delete_mirror(doc.doctype, doc.name))
@@ -59,7 +60,8 @@ def _get_source(doctype: str) -> SourceConfig | None:
 def sync(doctype: str, name: str) -> str | None:
 	"""Re-read a source row and mirror it (for writes via ``frappe.db.set_value``).
 
-	Returns the name of the mirror entry, or None when there is none."""
+	Returns the name of the mirror entry, or None when there is none. For a disabled
+	source the existing mirror is left as it is (deleted only when the row is gone)."""
 	config = _get_source(doctype)
 	if config is None:
 		return None
@@ -68,6 +70,8 @@ def sync(doctype: str, name: str) -> str | None:
 		if not frappe.db.exists(doctype, name):
 			_delete_mirror(doctype, name)
 			return None
+		if not config.enabled:
+			return frappe.db.get_value(ENTRY_DOCTYPE, {"source_doctype": doctype, "source_name": name})
 		return _apply(config, frappe.get_doc(doctype, name))
 
 	return _guarded(doctype, run)

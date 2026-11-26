@@ -1,0 +1,57 @@
+{
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": [
+  "source_doctype",
+  "source",
+  "enabled",
+  "min_severity",
+  "app_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source DocType",
+   "options": "DocType",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "min_severity",
+   "fieldtype": "Select",
+   "label": "Minimum Severity",
+   "options": "\ninfo\nwarning\nerror",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "app_default",
+   "fieldtype": "Data",
+   "label": "App Default",
+   "read_only": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "module": "Integration Log",
+ "custom": 0,
+ "name": "Integration Log Source Setting",
+ "engine": "InnoDB",
+ "owner": "Administrator",
+ "modified": "2026-11-26 12:00:00.000000",
+ "modified_by": "Administrator"
+}
