@@ -12,6 +12,9 @@ All notable changes to this project are documented here. The format follows
   Severity* per registered source. A disabled source is not mirrored (existing entries stay as they
   are, backfill skips it); a minimum severity replaces the hook's `mirror_levels`. Rows are added
   when the settings form is opened; sources without a row keep the hook values.
+- Hook key `area_field`: field of the source row copied to the new entry field *Area* (list view,
+  standard filter, "Integration Log by Source" report). Cut at 140 characters; empty values are
+  stored as none.
 
 ## [0.1.0] - unreleased
 

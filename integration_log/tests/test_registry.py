@@ -50,6 +50,16 @@ class TestRegistry(IntegrationTestCase):
 			self.assertEqual(registry.get_source("ToDo"), source)
 			self.assertIsNone(registry.get_source("User"))
 
+	def test_area_field_parsed(self):
+		self.assertEqual(self._build([todo_entry(area_field="priority")])["ToDo"].area_field, "priority")
+		self.assertIsNone(self._build([todo_entry()])["ToDo"].area_field)
+
+	def test_area_field_missing_field_invalid(self):
+		before = self._error_count()
+		reg = self._build([todo_entry(area_field="no_such_field")])
+		self.assertNotIn("ToDo", reg)
+		self.assertEqual(self._error_count(), before + 1)
+
 	def test_invalid_entries_are_ignored(self):
 		before = self._error_count()
 		entries = [

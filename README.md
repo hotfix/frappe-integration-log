@@ -52,6 +52,7 @@ integration_logs = [
 		"severity_map": {"Failed": "error", "Skipped": "warning", "Done": "info"},
 		"message_field": "error_message",
 		"title_field": "reference",
+		"area_field": "direction",
 		"context_fields": ["direction", "reference"],
 		"group_fields": ["direction", "reference"],
 		"link_fields": ["reference_doctype", "reference_name"],
@@ -77,6 +78,7 @@ integration_logs = [
 | --- | --- | --- | --- |
 | `severity_map` | dict | `{}` | Maps a status value to `error`, `warning` or `info`. |
 | `severity_method` | str (dotted path) | none | Function `f(doc)` returning `"error"`, `"warning"` or `"info"`. |
+| `area_field` | str | none | Field with the area (part of the system) of the row, shown as *Area* on the entry. It must exist on the DocType. Values are cut at 140 characters. |
 | `title_field` | str | none | Field used as title. Without it, the first line of the message, then the document name. Titles are cut at 140 characters. |
 | `context_fields` | list of str | `[]` | Fields stored as JSON in the entry's `context`. |
 | `group_fields` | list of str | `[]` | Fields that identify "the same thing" for automatic resolution (see below). |

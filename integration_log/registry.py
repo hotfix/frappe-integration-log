@@ -57,6 +57,7 @@ class SourceConfig:
 	severity_map: dict[str, str]
 	message_field: str
 	title_field: str | None = None
+	area_field: str | None = None
 	context_fields: tuple[str, ...] = ()
 	group_fields: tuple[str, ...] = ()
 	link_fields: tuple[str, str] | None = None
@@ -167,6 +168,10 @@ def _parse_entry(entry: dict) -> SourceConfig:
 		if not (meta.has_field(fieldname) or fieldname in default_fields):
 			raise ValueError(f"{key} {fieldname} not found on {doctype}")
 
+	area_field = entry.get("area_field")
+	if area_field and not (meta.has_field(area_field) or area_field in default_fields):
+		raise ValueError(f"area_field {area_field} not found on {doctype}")
+
 	severity_map = dict(entry.get("severity_map") or {})
 	for status, severity in severity_map.items():
 		if severity not in SEVERITIES:
@@ -190,6 +195,7 @@ def _parse_entry(entry: dict) -> SourceConfig:
 		severity_map=severity_map,
 		message_field=entry["message_field"],
 		title_field=entry.get("title_field"),
+		area_field=area_field,
 		context_fields=tuple(entry.get("context_fields") or ()),
 		group_fields=tuple(entry.get("group_fields") or ()),
 		link_fields=link_fields,

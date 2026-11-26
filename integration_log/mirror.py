@@ -158,6 +158,7 @@ def _mirror_values(config: SourceConfig, doc, severity: str, group_key: str | No
 	values = {
 		"severity": severity,
 		"source": config.source,
+		"area": _area(config, doc),
 		"title": (title or _first_line(message) or doc.name)[:MAX_TITLE],
 		"message": message,
 		"source_status": _source_status(config, doc),
@@ -178,6 +179,12 @@ def _source_status(config: SourceConfig, doc) -> str | None:
 	if not config.status_field:
 		return None
 	return cstr(doc.get(config.status_field))[:MAX_DATA] or None
+
+
+def _area(config: SourceConfig, doc) -> str | None:
+	if not config.area_field:
+		return None
+	return cstr(doc.get(config.area_field)).strip()[:MAX_DATA] or None
 
 
 def _context(config: SourceConfig, doc) -> str | None:

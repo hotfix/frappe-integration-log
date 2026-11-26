@@ -270,6 +270,28 @@ class TestMirror(IntegrationTestCase):
 		expected = {"status": "Open", "reference_name": "Administrator"}
 		self.assertEqual(frappe.parse_json(entry.context), expected)
 
+	def test_area_field_copied(self):
+		self._register([todo_entry(area_field="priority")])
+		self.assertEqual(self._mirror(self._todo()).area, "Medium")
+
+	def test_area_empty_is_none(self):
+		self._register([todo_entry(area_field="reference_name")])
+		self.assertIsNone(self._mirror(self._todo(ref=None)).area)
+		self._register([todo_entry()])
+		self.assertIsNone(self._mirror(self._todo()).area)
+
+	def test_area_cut_to_140(self):
+		self._register([todo_entry(area_field="description")])
+		self.assertEqual(len(self._mirror(self._todo(description="y" * 500)).area), 140)
+
+	def test_area_updated_on_change(self):
+		self._register([todo_entry(area_field="priority")])
+		todo = self._todo()
+		todo.reload()
+		todo.priority = "High"
+		todo.save(ignore_permissions=True)
+		self.assertEqual(self._mirror(todo).area, "High")
+
 	def test_title_field(self):
 		self._register([todo_entry(title_field="reference_name")])
 		self.assertEqual(self._mirror(self._todo()).title, "Administrator")
