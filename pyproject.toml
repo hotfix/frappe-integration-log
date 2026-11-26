@@ -1,7 +1,7 @@
 [project]
 name = "integration_log"
 authors = [
-    { name = "hotfix", email = "info@hotfix.example"}
+    { name = "hotfix", email = "1499166+hotfix@users.noreply.github.com"}
 ]
 description = "Central log for integrations: collect, acknowledge, retry"
 requires-python = ">=3.14"
