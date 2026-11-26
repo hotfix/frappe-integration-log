@@ -100,7 +100,8 @@ wins. The registry is cached and rebuilt on every `bench migrate`.
 3. The built-in Error Log source has no status and is always `error`.
 
 Only rows whose severity is in `mirror_levels` produce an entry. Everything else (for example a
-successful run) is not mirrored.
+successful run) is not mirrored. `info` is informational: when it is mirrored, the entry is created
+as `Resolved` (never `Open`), see below.
 
 ### Mirroring, groups and states
 
@@ -115,9 +116,13 @@ to the caller, because committing the rest of the transaction would silently los
   entry (severity, message, status, last seen).
 - If the row changes to a severity that is not mirrored, an `Open` entry becomes `Resolved`
   automatically.
+- **Info entries are history.** A row with severity `info` that is mirrored (`info` in the mirror
+  levels) gets an entry that is `Resolved` automatically from the start; an `Open` entry of the row
+  is resolved, an `Acknowledged` one stays acknowledged. The row still resolves its group like a
+  non-mirrored row. If the row later changes to `warning` or `error`, the entry opens again.
 - **Group resolution.** With `group_fields`, the values of those fields are hashed into a group key.
-  When a row of the group is saved with a non-mirrored severity (for example a later successful run),
-  all `Open` entries of the same group that are not newer than that row are resolved automatically.
+  When a row of the group is saved with a non-mirrored severity or with `info` (for example a later
+  successful run), all `Open` entries of the same group that are not newer than that row are resolved automatically.
   If all group fields are empty, no group is formed.
 - **Acknowledged stays acknowledged.** An acknowledged entry is never reopened or resolved by the
   mirror, even if the source row changes again. Only the displayed data is refreshed. A user can reopen
@@ -221,10 +226,13 @@ settings form is opened; save the form to keep them.
 
 - *Enabled*: untick to stop mirroring the source. No new entries are created, existing entries are
   neither updated nor resolved, and the backfill skips the source. Deleting a source row still
-  deletes its mirror, and acknowledge, reopen and retry keep working on existing entries.
+  deletes its mirror, and acknowledge, reopen and retry keep working on existing entries (after a
+  retry the entry itself is not updated while the source is disabled).
 - *Minimum Severity*: mirror every severity from the chosen one upwards (`info` = all, `warning` =
   warning and error, `error` = errors only). Empty uses the app's `mirror_levels`, shown in
-  *App Default*. A row that falls below the level resolves its open entry on its next change.
+  *App Default*. A row that falls below the level resolves its open entry on its next change. With
+  `info`, info entries are kept as resolved history and removed by retention; they never stay
+  `Open`, and a later successful row still resolves earlier errors of its group.
 
 A source without a row (for example before the settings were ever opened) keeps the hook values.
 Rows of sources that are no longer registered are ignored and can be deleted. Saving the settings
@@ -249,6 +257,12 @@ background job. It is queued on install and can be started again with the button
 **Integration Log Settings** (or `integration_log.api.start_backfill`); both need write permission
 on the settings, so only `System Manager` can start it. Running it more than once is safe. After adding a source, run `bench --site your.site migrate` so the registry is rebuilt, then
 start the backfill.
+
+**Upgrading to a version with *Area*:** after updating, run `bench --site your.site migrate`, then
+*Backfill now* in **Integration Log Settings**. The backfill writes *Area* into the existing entries
+of every enabled source that sets `area_field`. Entries of disabled sources keep their old values
+until the source is enabled again (and backfilled). Writing *Area* saves the entry, so resolved and
+acknowledged entries start their retention period again once.
 
 ## Permissions
 

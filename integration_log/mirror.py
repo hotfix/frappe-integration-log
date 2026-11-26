@@ -29,6 +29,7 @@ FAILED_TITLE = "Integration Log mirror failed: {}"
 # At most one unseen "mirror failed" Error Log per source DocType and hour
 FAILED_DEDUP_HOURS = 1
 DATETIME_FIELDS = frozenset({"occurred_on", "last_seen"})
+INFO = "info"
 
 
 def on_doc_event(doc, method=None) -> None:
@@ -102,7 +103,7 @@ def _apply(config: SourceConfig, doc) -> str | None:
 		as_dict=True,
 	)
 
-	if severity in config.mirror_levels:
+	if severity in config.mirror_levels and severity != INFO:
 		values = _mirror_values(config, doc, severity, group_key)
 		if not existing:
 			entry = frappe.get_doc({"doctype": ENTRY_DOCTYPE, "state": "Open", **values})
@@ -116,19 +117,34 @@ def _apply(config: SourceConfig, doc) -> str | None:
 		_update_entry(existing.name, values)
 		return existing.name
 
-	if existing and existing.state == "Open":
-		_update_entry(
-			existing.name,
-			{
-				"state": "Resolved",
-				"resolved_automatically": 1,
-				"source_status": _source_status(config, doc),
-				"last_seen": doc.modified,
-			},
-		)
+	name = existing.name if existing else None
+	if severity in config.mirror_levels:
+		# Mirrored info rows are history: the entry is resolved from the start (Acknowledged
+		# stays Acknowledged), and like any non-problem row it resolves its group below
+		values = _mirror_values(config, doc, severity, group_key)
+		if not existing:
+			entry = frappe.get_doc(
+				{"doctype": ENTRY_DOCTYPE, "state": "Resolved", "resolved_automatically": 1, **values}
+			)
+			entry.insert(ignore_permissions=True, ignore_links=True)
+			name = entry.name
+		else:
+			if existing.state != "Acknowledged":
+				values.update(state="Resolved", resolved_automatically=1)
+			_update_entry(existing.name, values)
+	elif existing:
+		values = {"area": _area(config, doc)}
+		if existing.state == "Open":
+			values.update(
+				state="Resolved",
+				resolved_automatically=1,
+				source_status=_source_status(config, doc),
+				last_seen=doc.modified,
+			)
+		_update_entry(existing.name, values)
 	if group_key:
 		_resolve_group(doc.doctype, group_key, doc.creation)
-	return existing.name if existing else None
+	return name
 
 
 def _changed_since(doc, existing) -> bool:

@@ -44,10 +44,11 @@ class TestSourceSettings(IntegrationTestCase):
 			settings.append("sources", row)
 		settings.save()
 
-	def _todo(self, status="Open", description="Sync failed"):
-		return frappe.get_doc({"doctype": "ToDo", "description": description, "status": status}).insert(
-			ignore_permissions=True
-		)
+	def _todo(self, status="Open", description="Sync failed", ref=False):
+		values = {"doctype": "ToDo", "description": description, "status": status}
+		if ref:
+			values.update(reference_type="User", reference_name="Administrator")
+		return frappe.get_doc(values).insert(ignore_permissions=True)
 
 	def _mirror(self, todo):
 		name = frappe.db.get_value(ENTRY, {"source_doctype": "ToDo", "source_name": todo.name})
@@ -108,7 +109,54 @@ class TestSourceSettings(IntegrationTestCase):
 		self._set_rows({"source_doctype": "ToDo", "enabled": 1, "min_severity": "info"})
 		entry = self._mirror(self._todo(status="Closed"))
 		self.assertEqual(entry.severity, "info")
+		# Info entries are history: created resolved, never Open
+		self.assertEqual(entry.state, "Resolved")
+		self.assertTrue(entry.resolved_automatically)
+
+	def test_info_entry_resolves_earlier_errors_of_group(self):
+		self._set_rows({"source_doctype": "ToDo", "enabled": 1, "min_severity": "info"})
+		error = self._todo(ref=True)
+		self.assertEqual(self._mirror(error).state, "Open")
+		success = self._todo(status="Closed", ref=True)
+		self.assertEqual(self._mirror(success).state, "Resolved")
+		self.assertEqual(self._mirror(error).state, "Resolved")
+		self.assertTrue(self._mirror(error).resolved_automatically)
+
+	def test_info_entry_reopens_when_row_turns_error(self):
+		self._set_rows({"source_doctype": "ToDo", "enabled": 1, "min_severity": "info"})
+		todo = self._todo(status="Closed")
+		self.assertEqual(self._mirror(todo).state, "Resolved")
+		self._save_todo(todo, status="Open")
+		entry = self._mirror(todo)
 		self.assertEqual(entry.state, "Open")
+		self.assertEqual(entry.severity, "error")
+		self.assertFalse(entry.resolved_automatically)
+
+	def test_info_keeps_acknowledged(self):
+		self._set_rows({"source_doctype": "ToDo", "enabled": 1, "min_severity": "info"})
+		todo = self._todo()
+		api.acknowledge([self._mirror(todo).name])
+		self._save_todo(todo, status="Closed")
+		entry = self._mirror(todo)
+		self.assertEqual(entry.state, "Acknowledged")
+		self.assertEqual(entry.severity, "info")
+
+	def test_area_refreshed_when_row_drops_below_level(self):
+		with patch.object(registry, "_load_hook_entries", return_value=[todo_entry(area_field="priority")]):
+			registry.clear_cache()
+			todo = self._todo()
+			self.assertEqual(self._mirror(todo).area, "Medium")
+			for state in ("Open", "Acknowledged"):
+				self._save_todo(todo, status="Open", priority="Medium")
+				entry = self._mirror(todo)
+				if state == "Acknowledged":
+					api.reopen([entry.name])
+					api.acknowledge([entry.name])
+				self._save_todo(todo, status="Closed", priority="High")
+				entry = self._mirror(todo)
+				self.assertEqual(entry.area, "High")
+				self.assertEqual(entry.state, "Resolved" if state == "Open" else "Acknowledged")
+			registry.clear_cache()
 
 	def test_min_severity_error_resolves_warning_on_change(self):
 		todo = self._todo(status="Cancelled")
