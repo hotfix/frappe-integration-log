@@ -6,28 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-### Added
+## [0.1.0] - 2026-11-26
 
-- Per-source settings: table *Sources* in Integration Log Settings with *Enabled* and *Minimum
-  Severity* per registered source. A disabled source is not mirrored (existing entries stay as they
-  are, backfill skips it); a minimum severity replaces the hook's `mirror_levels`. Rows are added
-  when the settings form is opened; sources without a row keep the hook values.
-- Hook key `area_field`: field of the source row copied to the new entry field *Area* (list view,
-  standard filter, "Integration Log by Source" report). Cut at 140 characters; empty values are
-  stored as none. After updating, run `bench migrate`, then *Backfill now* in Integration Log
-  Settings to fill *Area* for existing entries; entries of disabled sources keep their old values
-  until the source is enabled again.
-
-### Changed
-
-- Mirrored `info` rows create or update their entry as `Resolved` (automatically), never `Open`;
-  an acknowledged entry stays acknowledged. Like non-mirrored rows, they resolve earlier open entries
-  of their group. If the row later turns `warning` or `error`, the entry reopens.
-- When a row drops below the mirror levels, its existing entry also gets the current *Area*.
-- `integration_log.api.start_backfill` returns `{"enqueued": [...], "already_queued": [...]}`
-  instead of a list of enqueued DocTypes; both empty means no enabled source to backfill.
-
-## [0.1.0] - unreleased
+First release.
 
 ### Added
 
@@ -57,4 +38,19 @@ All notable changes to this project are documented here. The format follows
 - Workspace "Integration Log" with number cards "Open Errors" and "Open Warnings", the chart
   "Open by Source" and the report "Integration Log by Source", plus a standard `Sidebar` for the v16
   desk navigation.
+- Per-source settings: table *Sources* in Integration Log Settings with *Enabled* and *Minimum
+  Severity* per registered source. A disabled source is not mirrored (existing entries stay as they
+  are, backfill skips it); a minimum severity replaces the hook's `mirror_levels`. Rows are added
+  when the settings form is opened; sources without a row keep the hook values.
+- Hook key `area_field`: field of the source row copied to the new entry field *Area* (list view,
+  standard filter, "Integration Log by Source" report). Cut at 140 characters; empty values are
+  stored as none.
+- Mirrored `info` rows create or update their entry as `Resolved` (automatically), never `Open`;
+  an acknowledged entry stays acknowledged. Like non-mirrored rows, they resolve earlier open entries
+  of their group. If the row later turns `warning` or `error`, the entry reopens.
+- `integration_log.api.start_backfill` returns `{"enqueued": [...], "already_queued": [...]}`; both
+  empty means no enabled source to backfill.
 - German translation.
+
+[Unreleased]: https://github.com/hotfix/frappe-integration-log/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/hotfix/frappe-integration-log/releases/tag/v0.1.0

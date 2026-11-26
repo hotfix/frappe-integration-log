@@ -5,18 +5,37 @@
 [![Release](https://img.shields.io/github/v/release/hotfix/frappe-integration-log)](https://github.com/hotfix/frappe-integration-log/releases)
 [![CI](https://github.com/hotfix/frappe-integration-log/actions/workflows/ci.yml/badge.svg)](https://github.com/hotfix/frappe-integration-log/actions/workflows/ci.yml)
 
-A central log for integrations on Frappe v16. Apps that write their own sync or error log DocType
-register it with one hook entry. Integration Log mirrors the interesting rows into a single
-`Integration Log Entry` list, where users acknowledge, reopen and (if the source supports it) retry
-them. A workspace shows open errors and warnings at a glance.
+A central log for integrations on Frappe v16. It is meant for teams that run several connectors (shops,
+marketplaces, carriers, payment providers) and do not want to check a separate log in every app. Apps that
+write their own sync or error log DocType register it with one hook entry. Integration Log mirrors the
+interesting rows into a single `Integration Log Entry` list, where users acknowledge, reopen and (if the
+source supports it) retry them. A workspace shows open errors and warnings at a glance.
 
-There is no dependency on ERPNext, and consumer apps do not need to depend on Integration Log.
+There is no dependency on ERPNext, and consumer apps do not need to depend on Integration Log. It is used by
+[modified_connector](https://github.com/hotfix/frappe-modified-connector), the ERPNext connector for
+modified eCommerce shops, which registers its sync log with it.
+
+## Features
+
+- One hook entry (`integration_logs`) per log DocType; no code dependency for the consumer app.
+- Mirroring on every change of the source row, with severities, automatic resolution per group and
+  *Area* per entry.
+- Acknowledge (with note), reopen and retry, from the form and the list.
+- Optional mirroring of Frappe's Error Log as the source "System".
+- Per-source settings: enable or disable a source and set its minimum severity.
+- Backfill of existing rows, daily retention cleanup.
+- Workspace with number cards, a chart and a report; German translation.
+
+## Requirements
+
+- Frappe v16. ERPNext is not required.
 
 ## Install
 
 ```bash
 bench get-app https://github.com/hotfix/frappe-integration-log
 bench --site your.site install-app integration_log
+bench build --app integration_log
 ```
 
 Installing creates the role `Integration Log Manager` and queues a backfill of existing rows of all
@@ -34,6 +53,18 @@ bench get-app https://github.com/hotfix/frappe-integration-log --branch v0.1.0
 
 In a Docker image, use the tag as the branch of the app in `apps.json`. Changes per version are
 listed in [CHANGELOG.md](CHANGELOG.md).
+
+## Quick start
+
+1. Install a consumer app that registers its log, for example
+   [modified_connector](https://github.com/hotfix/frappe-modified-connector), or add an `integration_logs`
+   entry to your own app (see below) and run `bench --site your.site migrate`.
+2. Open the tile *Integration Log* on the home screen. Errors and warnings of the registered sources
+   appear in the workspace and in the *Integration Log Entry* list.
+3. Optional: in **Integration Log Settings**, tick *Include Error Log*, adjust the *Sources* table and
+   click *Backfill now* to mirror rows that existed before.
+4. Work through the open entries: fix the cause, then **Retry** (if the source supports it) or
+   **Acknowledge** them.
 
 ## Screenshots
 
@@ -122,7 +153,8 @@ to the caller, because committing the rest of the transaction would silently los
   non-mirrored row. If the row later changes to `warning` or `error`, the entry opens again.
 - **Group resolution.** With `group_fields`, the values of those fields are hashed into a group key.
   When a row of the group is saved with a non-mirrored severity or with `info` (for example a later
-  successful run), all `Open` entries of the same group that are not newer than that row are resolved automatically.
+  successful run), all `Open` entries of the same group that are not newer than that row are resolved
+  automatically.
   If all group fields are empty, no group is formed.
 - **Acknowledged stays acknowledged.** An acknowledged entry is never reopened or resolved by the
   mirror, even if the source row changes again. Only the displayed data is refreshed. A user can reopen
@@ -255,8 +287,8 @@ consumer app).
 Rows that existed before the app was installed, or before a source was registered, are mirrored by a
 background job. It is queued on install and can be started again with the button *Backfill now* in
 **Integration Log Settings** (or `integration_log.api.start_backfill`); both need write permission
-on the settings, so only `System Manager` can start it. Running it more than once is safe. After adding a source, run `bench --site your.site migrate` so the registry is rebuilt, then
-start the backfill.
+on the settings, so only `System Manager` can start it. Running it more than once is safe. After adding a
+source, run `bench --site your.site migrate` so the registry is rebuilt, then start the backfill.
 
 **Upgrading to a version with *Area*:** after updating, run `bench --site your.site migrate`, then
 *Backfill now* in **Integration Log Settings**. The backfill writes *Area* into the existing entries
@@ -295,6 +327,21 @@ present in the bench (a plain restart does not recreate the symlink). After inst
 German translations are in `integration_log/locale/de.po`. Update the template with
 `bench generate-pot-file --app integration_log` and compile with
 `bench compile-po-to-mo --app integration_log` (also done by `bench build`).
+
+## Feedback and contributing
+
+Reports from real setups make this app better, so please get in touch:
+
+- **Found a bug?** [Open an issue](https://github.com/hotfix/frappe-integration-log/issues/new/choose) with
+  the steps to reproduce it and your versions of Frappe, ERPNext (if installed) and this app.
+- **Missing a feature or have an idea?** Open a feature request on the same page. Questions are welcome too.
+- **Want to fix something yourself?** Pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Security issue?** Please do not open a public issue; see [SECURITY.md](SECURITY.md).
+
+The app is maintained in spare time and provided as is, so there are no guaranteed response times, but every
+report is read.
+
+If the app is useful to you, a ⭐ on GitHub helps others find it.
 
 ## License
 
