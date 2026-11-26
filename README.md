@@ -42,18 +42,6 @@ Installing creates the role `Integration Log Manager` and queues a backfill of e
 registered sources. `System Manager` and `Integration Log Manager` can work with the entries. Only
 `System Manager` can change **Integration Log Settings**.
 
-## Versions and updates
-
-Development happens on `main`. Releases are git tags `vX.Y.Z` with a GitHub Release. Production
-installs should pin a tag:
-
-```bash
-bench get-app https://github.com/hotfix/frappe-integration-log --branch v0.1.0
-```
-
-In a Docker image, use the tag as the branch of the app in `apps.json`. Changes per version are
-listed in [CHANGELOG.md](CHANGELOG.md).
-
 ## Quick start
 
 1. Install a consumer app that registers its log, for example
@@ -65,6 +53,18 @@ listed in [CHANGELOG.md](CHANGELOG.md).
    click *Backfill now* to mirror rows that existed before.
 4. Work through the open entries: fix the cause, then **Retry** (if the source supports it) or
    **Acknowledge** them.
+
+## Versions and updates
+
+Development happens on `main`. Releases are git tags `vX.Y.Z` with a GitHub Release. Production
+installs should pin a tag:
+
+```bash
+bench get-app https://github.com/hotfix/frappe-integration-log --branch v0.1.0
+```
+
+In a Docker image, use the tag as the branch of the app in `apps.json`. Changes per version are
+listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Screenshots
 
