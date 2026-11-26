@@ -125,6 +125,10 @@ msgstr "Ab Stufe"
 msgid "Mirror Error Log records into the integration log."
 msgstr "Fehlerprotokoll-Einträge in das Integrations-Protokoll spiegeln."
 
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js
+msgid "No enabled sources to backfill."
+msgstr "Keine aktiven Quellen für den Nachimport."
+
 #. Label of the occurred_on (Datetime) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:124
 msgid "Occurred On"
@@ -195,6 +199,12 @@ msgstr "Erneuter Versuch ausgelöst."
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:43
 msgid "Severity"
 msgstr "Schweregrad"
+
+#. Label of the source_doctype (Link) field in DocType 'Integration Log Source
+#. Setting'
+#: integration_log/integration_log/doctype/integration_log_source_setting/integration_log_source_setting.json
+msgid "Source DocType"
+msgstr "Quelle DocType"
 
 #. Label of the source_status (Data) field in DocType 'Integration Log Entry'
 #: integration_log/integration_log/doctype/integration_log_entry/integration_log_entry.json:76

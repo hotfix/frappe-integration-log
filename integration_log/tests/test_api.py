@@ -216,7 +216,7 @@ class TestApi(IntegrationTestCase):
 			patch("integration_log.api.is_job_enqueued", return_value=False),
 			patch("frappe.enqueue") as enqueue,
 		):
-			self.assertEqual(api.start_backfill(), ["ToDo"])
+			self.assertEqual(api.start_backfill(), {"enqueued": ["ToDo"], "already_queued": []})
 		self.assertTrue(enqueue.call_args.kwargs["enqueue_after_commit"])
 		self.assertEqual(enqueue.call_args.args[0], "integration_log.api.backfill")
 		self.assertEqual(enqueue.call_args.kwargs["queue"], "long")
@@ -238,7 +238,7 @@ class TestApi(IntegrationTestCase):
 			patch("integration_log.api.is_job_enqueued", return_value=True),
 			patch("frappe.enqueue") as enqueue,
 		):
-			self.assertEqual(api.start_backfill(), [])
+			self.assertEqual(api.start_backfill(), {"enqueued": [], "already_queued": ["ToDo"]})
 		enqueue.assert_not_called()
 
 	def test_start_backfill_enqueues_when_not_queued(self):
@@ -246,7 +246,7 @@ class TestApi(IntegrationTestCase):
 			patch("integration_log.api.is_job_enqueued", return_value=False) as queued,
 			patch("frappe.enqueue", return_value=None) as enqueue,
 		):
-			self.assertEqual(api.start_backfill(), ["ToDo"])
+			self.assertEqual(api.start_backfill(), {"enqueued": ["ToDo"], "already_queued": []})
 		self.assertEqual(queued.call_args.args[0], enqueue.call_args.kwargs["job_id"])
 		self.assertNotIn(frappe.local.site, enqueue.call_args.kwargs["job_id"])
 

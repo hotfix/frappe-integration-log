@@ -108,16 +108,23 @@ def _include_error_log() -> bool:
 def _source_settings() -> dict[str, dict]:
 	"""Settings rows by source DocType; {} when the table does not exist (yet) or on any error."""
 	try:
-		if not frappe.db.table_exists(SOURCE_SETTING_DOCTYPE):
-			return {}
-		rows = frappe.get_all(
-			SOURCE_SETTING_DOCTYPE,
-			filters={"parent": SETTINGS_DOCTYPE, "parenttype": SETTINGS_DOCTYPE, "parentfield": "sources"},
-			fields=["source_doctype", "enabled", "min_severity"],
-			order_by="idx asc",
-		)
+		return _read_source_settings()
 	except Exception:
 		return {}
+
+
+def _read_source_settings() -> dict[str, dict]:
+	"""Like _source_settings, but raises when the rows cannot be read.
+
+	A missing table is not an error (fresh install, before migrate): it returns {}."""
+	if not frappe.db.table_exists(SOURCE_SETTING_DOCTYPE):
+		return {}
+	rows = frappe.get_all(
+		SOURCE_SETTING_DOCTYPE,
+		filters={"parent": SETTINGS_DOCTYPE, "parenttype": SETTINGS_DOCTYPE, "parentfield": "sources"},
+		fields=["source_doctype", "enabled", "min_severity"],
+		order_by="idx asc",
+	)
 
 	settings: dict[str, dict] = {}
 	for row in rows:
@@ -193,7 +200,8 @@ def _parse_entry(entry: dict) -> SourceConfig:
 	)
 
 
-def _build_registry(errors: list[str]) -> dict[str, SourceConfig]:
+def _build_registry(errors: list[str], settings: dict[str, dict] | None = None) -> dict[str, SourceConfig]:
+	"""Registry from the hook entries with the settings rows applied (read when not given)."""
 	registry: dict[str, SourceConfig] = {}
 
 	for entry in _load_hook_entries():
@@ -209,7 +217,8 @@ def _build_registry(errors: list[str]) -> dict[str, SourceConfig]:
 	if "Error Log" not in registry and _include_error_log():
 		registry["Error Log"] = ERROR_LOG_SOURCE
 
-	settings = _source_settings()
+	if settings is None:
+		settings = _source_settings()
 	return {doctype: _apply_settings(config, settings.get(doctype)) for doctype, config in registry.items()}
 
 
@@ -230,9 +239,19 @@ def get_registry() -> dict[str, SourceConfig]:
 	setattr(frappe.local, BUILDING_ATTR, True)
 	try:
 		errors: list[str] = []
-		registry = _build_registry(errors)
+		try:
+			settings = _read_source_settings()
+		except Exception:
+			# Fall back to the hook values for this request only; caching them would
+			# re-enable disabled sources until the next settings save
+			settings = None
+			frappe.logger("integration_log").exception(
+				"Integration Log: could not read source settings, using hook values"
+			)
+		registry = _build_registry(errors, settings or {})
 		# Store first, so anything triggered by logging below sees a warm cache
-		frappe.cache.set_value(CACHE_KEY, registry)
+		if settings is not None:
+			frappe.cache.set_value(CACHE_KEY, registry)
 		setattr(frappe.local, LOCAL_ATTR, registry)
 		for message in errors:
 			try:

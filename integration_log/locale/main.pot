@@ -167,6 +167,10 @@ msgstr ""
 msgid "Mirror Error Log records into the integration log."
 msgstr ""
 
+#: integration_log/integration_log/doctype/integration_log_settings/integration_log_settings.js
+msgid "No enabled sources to backfill."
+msgstr ""
+
 #: integration_log/api.py:17
 msgid "Not permitted"
 msgstr ""

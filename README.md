@@ -225,8 +225,11 @@ settings form is opened; save the form to keep them.
   *App Default*. A row that falls below the level resolves its open entry on its next change.
 
 A source without a row (for example before the settings were ever opened) keeps the hook values.
-Rows of sources that are no longer registered are ignored and can be deleted. Changes apply as soon
-as the settings are saved.
+Rows of sources that are no longer registered are ignored and can be deleted. Saving the settings
+removes rows whose DocType no longer exists (for example after uninstalling the consumer app), blank
+rows and duplicate rows (the first row per DocType is kept). Changes apply as soon as the settings
+are saved. Disabled sources are skipped by *Backfill now*; when no enabled source is left, the
+button says so.
 
 ## Retention and cleanup
 

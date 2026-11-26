@@ -181,9 +181,37 @@ class TestSourceSettings(IntegrationTestCase):
 			patch("integration_log.api.is_job_enqueued", return_value=False),
 			patch("frappe.enqueue") as enqueue,
 		):
-			self.assertEqual(api.start_backfill(), [])
-			self.assertEqual(api.start_backfill("ToDo"), [])
+			self.assertEqual(api.start_backfill(), {"enqueued": [], "already_queued": []})
+			self.assertEqual(api.start_backfill("ToDo"), {"enqueued": [], "already_queued": []})
 		enqueue.assert_not_called()
+
+	def test_save_drops_rows_of_missing_doctypes(self):
+		self._set_rows(
+			{"source_doctype": "Integration Log No Such DocType", "enabled": 1},
+			{"source_doctype": "ToDo", "enabled": 0},
+			{"source_doctype": None, "enabled": 1},
+			{"source_doctype": "ToDo", "enabled": 1, "min_severity": "info"},
+		)
+		rows = frappe.get_all(ROW, filters={"parent": SETTINGS}, fields=["source_doctype", "enabled"])
+		self.assertEqual([(r.source_doctype, r.enabled) for r in rows], [("ToDo", 0)])
+		self.assertFalse(registry.get_source("ToDo").enabled)
+
+	def test_failed_settings_read_is_not_cached(self):
+		registry.clear_cache()
+		with patch.object(frappe, "get_all", side_effect=RuntimeError("database error")):
+			self.assertTrue(registry.get_source("ToDo").enabled)
+		self.assertIsNone(frappe.cache.get_value(registry.CACHE_KEY))
+
+		# A missing table is a normal state (before migrate): that registry is cached
+		registry.clear_cache()
+		table_exists = frappe.db.table_exists
+		with patch.object(
+			frappe.db,
+			"table_exists",
+			side_effect=lambda doctype, *a, **kw: doctype != ROW and table_exists(doctype, *a, **kw),
+		):
+			registry.get_source("ToDo")
+		self.assertIsNotNone(frappe.cache.get_value(registry.CACHE_KEY))
 
 	def test_settings_save_takes_effect_without_manual_cache_clear(self):
 		self.assertTrue(registry.get_source("ToDo").enabled)

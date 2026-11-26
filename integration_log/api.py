@@ -114,11 +114,15 @@ def retry(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def start_backfill(source_doctype: str | None = None) -> list[str]:
-	"""Enqueue backfill jobs; returns the doctypes enqueued (already queued ones are skipped)."""
+def start_backfill(source_doctype: str | None = None) -> dict[str, list[str]]:
+	"""Enqueue backfill jobs for enabled sources.
+
+	Returns ``{"enqueued": [...], "already_queued": [...]}``; both empty means there is no
+	enabled source to backfill."""
 	_check_permission(SETTINGS)
 	doctypes = [source_doctype] if source_doctype else sorted(registry.registered_doctypes())
 	enqueued = []
+	already_queued = []
 	for doctype in doctypes:
 		config = registry.get_source(doctype)
 		if config is not None and not config.enabled:
@@ -127,6 +131,7 @@ def start_backfill(source_doctype: str | None = None) -> list[str]:
 		# enqueue_after_commit, so deduplicate by asking the queue ourselves.
 		job_id = f"integration_log_backfill::{doctype}"
 		if is_job_enqueued(job_id):
+			already_queued.append(doctype)
 			continue
 		frappe.enqueue(
 			"integration_log.api.backfill",
@@ -137,7 +142,7 @@ def start_backfill(source_doctype: str | None = None) -> list[str]:
 			source_doctype=doctype,
 		)
 		enqueued.append(doctype)
-	return enqueued
+	return {"enqueued": enqueued, "already_queued": already_queued}
 
 
 def backfill(source_doctype: str | None = None, chunk: int = BACKFILL_CHUNK) -> int:
